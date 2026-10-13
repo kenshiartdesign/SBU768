@@ -5,7 +5,7 @@ const CONFIG = {
   RADIUS_DEFAULT: 100,
   MAX_ACCURACY: 60,
   COOLDOWN_HOURS: 5,
-  USE_MOCK_DATA: false // true = demo tanpa GAS, false = pakai GAS beneran
+  USE_MOCK_DATA: true // true = demo tanpa GAS, false = pakai GAS beneran
 };
 
 const LOKASI_DEFAULT = [
