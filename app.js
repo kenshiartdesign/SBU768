@@ -1,4 +1,3 @@
-
 // ================= CONFIG - GANTI DISINI =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbw-58nnkja5GjCIlKhgujoOaOHwl6q5Db9vO8EbAL3U_taootpJe0RJIjLA0bzFiDdRYQ/exec', // GANTI DENGAN URL GAS ANDA
