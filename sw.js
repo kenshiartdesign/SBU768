@@ -1,4 +1,3 @@
-
 const CACHE_NAME = 'sbu-absen-v2.1';
 const ASSETS = [
   './',
