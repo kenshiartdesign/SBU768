@@ -1,3 +1,4 @@
+// ================= CONFIG - GANTI DISINI =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbw-58nnkja5GjCIlKhgujoOaOHwl6q5Db9vO8EbAL3U_taootpJe0RJIjLA0bzFiDdRYQ/exec', // GANTI DENGAN URL GAS ANDA
   COMPANY: 'PT SENTRA BHAKTI UTAMA',
@@ -5,115 +6,51 @@ const CONFIG = {
   MAX_ACCURACY: 60,
   COOLDOWN_HOURS: 5,
   USE_MOCK_DATA: true // true = demo tanpa GAS, false = pakai GAS beneran
-};\n\nconst LOKASI_DEFAULT = [
+};
+
+const LOKASI_DEFAULT = [
   {id_lokasi:'LOK001', nama_lokasi:'Kantor Pusat SBU Semarang', alamat:'Jl. Pemuda No.123 Semarang', latitude:-6.9667, longitude:110.42, radius_meter:150, status:'AKTIF'},
   {id_lokasi:'LOK002', nama_lokasi:'Gudang Industri Candi', alamat:'Kawasan Industri Candi Semarang', latitude:-6.987, longitude:110.39, radius_meter:200, status:'AKTIF'},
   {id_lokasi:'LOK003', nama_lokasi:'Perum Green Lake', alamat:'Cluster Green Lake Tangerang', latitude:-6.188, longitude:106.625, radius_meter:100, status:'AKTIF'}
-];\n
+];
+
 // ===== STATE =====
 let currentUser = JSON.parse(localStorage.getItem('sbu_user')||'null');
 let selectedLokasi = JSON.parse(localStorage.getItem('sbu_lokasi')||'null');
 let absenState = JSON.parse(localStorage.getItem('sbu_absen_state')||'{"lastMasuk":null,"lastPulang":null,"nextMasuk":null}');
 let gps = null, watchId=null, mockSuspect=false, currentCameraMode=null, stream=null, capturedBase64=null;
 let patroliData={foto1:'',foto2:''}, kejadianData={foto1:'',foto2:''}, ijinFoto='', ijinJenis='IJIN';
-\n
-// ===== PWA INSTALL LOGIC - FIXED VERSION =====
+
+// ===== PWA INSTALL LOGIC =====
 let deferredPrompt=null;
-let installPromptFired=false;
-
-window.addEventListener('beforeinstallprompt', (e) => {
-  console.log('[PWA] beforeinstallprompt fired');
-  e.preventDefault();
-  deferredPrompt = e;
-  installPromptFired = true;
-  const btn = document.getElementById('btnInstall');
-  if(btn){
-    btn.innerHTML = '<i class="fa-solid fa-download"></i> INSTALL SEKARANG';
-    btn.classList.remove('opacity-50','pointer-events-none');
-  }
-  const desc = document.getElementById('installDesc');
-  if(desc) desc.innerText = 'Aplikasi siap di-install. Klik tombol di bawah.';
-});
-
-window.addEventListener('appinstalled', () => {
-  console.log('[PWA] appinstalled');
-  deferredPrompt = null;
-  const block = document.getElementById('installBlock');
-  if(block) block.classList.add('hidden');
-  localStorage.setItem('sbu_installed','1');
-});
-
+window.addEventListener('beforeinstallprompt', e=>{e.preventDefault(); deferredPrompt=e; const btn=document.getElementById('btnInstall'); if(btn) btn.classList.remove('hidden');});
 function checkInstall(){
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const bypass = localStorage.getItem('sbu_bypass')=='1';
-  const installed = localStorage.getItem('sbu_installed')=='1';
-  
-  console.log('[PWA] check - standalone:', isStandalone, 'iOS:', isIOS, 'bypass:', bypass);
-  
-  const block = document.getElementById('installBlock');
-  if(!block) return;
-  
-  if(isStandalone || bypass || installed){
-    block.classList.add('hidden');
-    return;
-  }
-  
-  block.classList.remove('hidden');
-  
-  if(isIOS){
-    const hint=document.getElementById('iosHint');
-    if(hint) hint.classList.remove('hidden');
-    const btn=document.getElementById('btnInstall');
-    if(btn){
-      btn.innerHTML = '<i class="fa-brands fa-apple"></i> CARA INSTALL iPHONE';
-      btn.onclick = () => {
-        alert('iPhone:\n1. Tap icon Share (kotak panah atas) di bawah Safari\n2. Pilih Add to Home Screen\n3. Tap Add\n\nSetelah itu buka dari Home Screen');
-      };
+  if(!isStandalone && !bypass){
+    const block=document.getElementById('installBlock');
+    if(block) block.classList.remove('hidden');
+    if(isIOS){
+      const hint=document.getElementById('iosHint'); if(hint) hint.classList.remove('hidden');
+      const btn=document.getElementById('btnInstall'); if(btn) btn.classList.add('hidden');
+      const title=document.getElementById('installTitle'); if(title) title.innerText='Install di iPhone';
+      const desc=document.getElementById('installDesc'); if(desc) desc.innerText='Tap Share > Add to Home Screen untuk install.';
     }
-    const title=document.getElementById('installTitle');
-    if(title) title.innerText='Install di iPhone';
-    const desc=document.getElementById('installDesc');
-    if(desc) desc.innerText='Safari tidak support tombol install. Ikuti petunjuk di bawah.';
   } else {
-    // Android / Desktop
-    const btn=document.getElementById('btnInstall');
-    if(btn){
-      // Default handler - akan di-override jika beforeinstallprompt fired
-      btn.onclick = async () => {
-        console.log('[PWA] Install clicked, deferredPrompt:', !!deferredPrompt, 'fired:', installPromptFired);
-        if(deferredPrompt){
-          deferredPrompt.prompt();
-          const {outcome} = await deferredPrompt.userChoice;
-          console.log('[PWA] User choice:', outcome);
-          if(outcome==='accepted'){
-            const block=document.getElementById('installBlock');
-            if(block) block.classList.add('hidden');
-          }
-          deferredPrompt = null;
-        } else {
-          // Fallback jika beforeinstallprompt belum fired - kasih instruksi manual
-          if(!installPromptFired){
-            alert('Jika tombol tidak reaksi:\n\n1. Pastikan buka via HTTPS (GitHub Pages sudah HTTPS)\n2. Di Chrome Android: Tap titik 3 di kanan atas > Add to Home Screen / Install App\n3. Di Desktop Chrome: Icon install di address bar kanan\n\nAtau coba Bypass untuk testing dulu (link bawah)');
-            const desc=document.getElementById('installDesc');
-            if(desc) desc.innerHTML = '<b>Chrome:</b> Menu ⋮ > Add to Home Screen<br><b>Edge:</b> Menu ... > Apps > Install<br><b>Jika tetap tidak bisa, gunakan Bypass dulu untuk test.';
-          } else {
-            alert('Install prompt sudah pernah ditolak. Reset: Chrome > Settings > Site Settings > Clear & Reset, lalu reload halaman ini.');
-          }
-        }
-      };
-    }
+    const block=document.getElementById('installBlock');
+    if(block) block.classList.add('hidden');
   }
 }
-
-// Panggil check setelah DOM ready
 document.addEventListener('DOMContentLoaded', ()=>{
-  setTimeout(checkInstall, 500); // delay biar SW & manifest ke-load dulu
+  const btn=document.getElementById('btnInstall');
+  if(btn) btn.onclick = async ()=>{
+    if(deferredPrompt){ deferredPrompt.prompt(); const {outcome}=await deferredPrompt.userChoice; if(outcome==='accepted'){ const block=document.getElementById('installBlock'); if(block) block.classList.add('hidden'); } }
+  };
+  checkInstall();
   // Register SW
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js').then(reg=>{
-      console.log('[SW] Registered', reg.scope);
-    }).catch(e=>console.log('[SW] Fail',e));
+    navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(e=>console.log('SW fail',e));
   }
   // Clock
   setInterval(()=>{const n=new Date(); const clockTop=document.getElementById('clockTop'); if(clockTop) clockTop.innerText=n.toLocaleTimeString('id-ID'); const camTime=document.getElementById('camTime'); if(camTime) camTime.innerText=n.toLocaleTimeString('id-ID');},1000);
@@ -121,7 +58,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   if(currentUser && selectedLokasi) { const loginScreen=document.getElementById('screen-login'); if(loginScreen) loginScreen.classList.add('hidden'); showMainScreen(); }
   else if(currentUser) { const loginScreen=document.getElementById('screen-login'); if(loginScreen) loginScreen.classList.add('hidden'); showLokasiScreen(); }
 });
-\n// ===== GPS =====
+
+// ===== GPS =====
 function startGPS(){
   if(!navigator.geolocation) return;
   watchId = navigator.geolocation.watchPosition(pos=>{
