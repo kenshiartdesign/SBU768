@@ -51,62 +51,63 @@
         <div class="bg-white rounded-[24px] p-4 shadow-sm">
           <p class="text-[11px] font-bold text-slate-400">STATUS GPS & ABSEN</p>
           <p id="absenJarak" class="text-[12px] mt-1 font-bold text-slate-700">Menunggu GPS...</p>
+          <p id="absenPesan" class="text-[10px] mt-2 text-amber-600 font-bold"></p>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <button onclick="openCamera('masuk')" class="h-[80px] bg-[#0f172a] text-white rounded-[20px] font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-right-to-bracket text-xl"></i> ABSEN MASUK</button>
-          <button onclick="openCamera('pulang')" class="h-[80px] bg-white border-2 border-slate-200 text-slate-800 rounded-[20px] font-bold shadow-sm active:scale-95 transition flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-right-from-bracket text-xl"></i> ABSEN PULANG</button>
+          <button id="btnAbsenMasuk" onclick="openCamera('masuk')" class="h-[80px] bg-[#0f172a] text-white rounded-[20px] font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-right-to-bracket text-xl"></i> ABSEN MASUK</button>
+          <button id="btnAbsenPulang" onclick="openCamera('pulang')" class="h-[80px] bg-white border-2 border-slate-200 text-slate-400 rounded-[20px] font-bold shadow-sm flex flex-col items-center justify-center gap-1" disabled><i class="fa-solid fa-right-from-bracket text-xl"></i> ABSEN PULANG</button>
         </div>
       </div>
 
       <!-- TAB PATROLI -->
       <div id="tab-patroli" class="hidden space-y-4">
         <div class="bg-white rounded-[24px] p-4 shadow-sm">
-          <p class="font-bold text-sm mb-2">Form Laporan Patroli</p>
-          <textarea id="patroliCatatan" placeholder="Catatan kondisi lapangan..." class="w-full h-24 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
+          <p class="font-bold text-sm mb-2"><i class="fa-solid fa-route text-amber-500"></i> Laporan Patroli</p>
+          <input id="patroliLokasi" placeholder="Lokasi patroli (misal: Pos Utara Lantai 2)" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
+          <textarea id="patroliCatatan" placeholder="Keterangan patroli..." class="w-full h-24 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
           <div class="grid grid-cols-2 gap-2">
             <button onclick="openCamera('patroli1')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli1">📷 Foto 1</button>
-            <button onclick="openCamera('patroli2')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2"> Foto 2</button>
+            <button onclick="openCamera('patroli2')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2">📷 Foto 2</button>
           </div>
-          <button onclick="submitPatroliFinal()" class="w-full mt-4 h-[48px] bg-amber-400 text-slate-900 rounded-xl font-bold shadow-lg active:scale-95 transition">KIRIM LAPORAN</button>
+          <button onclick="submitPatroliFinal()" class="w-full mt-4 h-[48px] bg-amber-400 text-slate-900 rounded-xl font-bold shadow-lg active:scale-95 transition">KIRIM LAPORAN PATROLI</button>
         </div>
       </div>
 
       <!-- TAB KEJADIAN -->
       <div id="tab-kejadian" class="hidden space-y-4">
         <div class="bg-white rounded-[24px] p-4 shadow-sm">
-          <p class="font-bold text-sm mb-2 text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> Laporan Kejadian Darurat</p>
-          <input id="kejadianJenis" placeholder="Jenis Kejadian (misal: Kehilangan, Kecelakaan)" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
+          <p class="font-bold text-sm mb-2 text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> Laporan Kejadian</p>
+          <select id="kejadianJenis" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2 font-bold">
+            <option value="">-- Pilih Jenis Kejadian --</option>
+            <option value="Kehilangan">Kehilangan</option>
+            <option value="Kecelakaan">Kecelakaan</option>
+            <option value="Kerusakan">Kerusakan Fasilitas</option>
+            <option value="Pencurian">Pencurian</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+          <input id="kejadianLokasi" placeholder="Lokasi kejadian" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
           <textarea id="kejadianKronologi" placeholder="Kronologi kejadian..." class="w-full h-24 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
           <div class="grid grid-cols-2 gap-2">
             <button onclick="openCamera('kejadian1')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-red-300 flex flex-col items-center justify-center text-xs font-bold text-red-500" id="btnKejadian1">📷 Bukti 1</button>
             <button onclick="openCamera('kejadian2')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-red-300 flex flex-col items-center justify-center text-xs font-bold text-red-500" id="btnKejadian2">📷 Bukti 2</button>
           </div>
-          <button onclick="submitKejadianFinal()" class="w-full mt-4 h-[48px] bg-red-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">KIRIM LAPORAN DARURAT</button>
+          <button onclick="submitKejadianFinal()" class="w-full mt-4 h-[48px] bg-red-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">KIRIM LAPORAN KEJADIAN</button>
         </div>
       </div>
 
-      <!-- TAB IJIN -->
-      <div id="tab-ijin" class="hidden space-y-4">
+      <!-- TAB INFO (Slip Gaji, Tukar Shift, Ijin/Sakit) -->
+      <div id="tab-info" class="hidden space-y-4">
+        <!-- Slip Gaji -->
         <div class="bg-white rounded-[24px] p-4 shadow-sm">
-          <p class="font-bold text-sm mb-2">Pengajuan Ijin / Sakit</p>
-          <select id="ijinJenis" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2 font-bold">
-            <option value="SAKIT">Sakit</option>
-            <option value="IJIN">Ijin Pribadi</option>
-          </select>
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <input type="date" id="ijinMulai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
-            <input type="date" id="ijinSelesai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
+          <p class="font-bold text-sm mb-3"><i class="fa-solid fa-money-bill-wave text-green-500"></i> Slip Gaji Saya</p>
+          <div id="listSlipGaji" class="space-y-2">
+            <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
           </div>
-          <textarea id="ijinKet" placeholder="Keterangan / Alasan..." class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
-          <button onclick="openCamera('ijin')" class="w-full h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500 mb-3" id="btnIjin">📷 Upload Surat / Bukti (Opsional)</button>
-          <button onclick="submitIjinFinal()" class="w-full h-[48px] bg-blue-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN IJIN</button>
         </div>
-      </div>
-
-      <!-- TAB TUKAR SHIFT -->
-      <div id="tab-shift" class="hidden space-y-4">
+        
+        <!-- Tukar Shift -->
         <div class="bg-white rounded-[24px] p-4 shadow-sm">
-          <p class="font-bold text-sm mb-2"><i class="fa-solid fa-right-left text-purple-600"></i> Pengajuan Tukar Shift</p>
+          <p class="font-bold text-sm mb-2"><i class="fa-solid fa-right-left text-purple-600"></i> Tukar Shift/Jadwal</p>
           <input type="date" id="shiftTanggal" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
           <div class="grid grid-cols-2 gap-2 mb-2">
             <select id="shiftLama" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none font-bold">
@@ -120,58 +121,76 @@
               <option value="Malam">Shift Malam</option>
             </select>
           </div>
-          <input id="shiftPenggantiUser" placeholder="Username Pengganti (misal: satpam02)" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
+          <input id="shiftPenggantiUser" placeholder="Username Pengganti" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
           <input id="shiftPenggantiNama" placeholder="Nama Pengganti" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
           <textarea id="shiftAlasan" placeholder="Alasan tukar shift..." class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
           <button onclick="submitShiftFinal()" class="w-full h-[48px] bg-purple-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN TUKAR SHIFT</button>
         </div>
-      </div>
-
-      <!-- TAB PROFIL + NOTIFIKASI + RIWAYAT PENGAJUAN + SLIP GAJI -->
-      <div id="tab-profil" class="hidden space-y-4">
-        <div class="bg-white rounded-[24px] p-4 shadow-sm text-center">
-          <div class="w-16 h-16 rounded-full bg-amber-400 flex items-center justify-center font-bold text-2xl text-slate-900 mx-auto mb-2" id="avatarProfil">-</div>
-          <p class="font-bold text-lg" id="namaProfil">-</p>
-          <p class="text-[11px] text-slate-500" id="roleProfil">-</p>
-        </div>
         
-        <!-- NOTIFIKASI PENGAJUAN -->
-        <div id="notifPengajuan" class="hidden bg-green-50 border-2 border-green-400 rounded-[20px] p-4">
-          <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-bell text-white"></i></div>
-            <div class="flex-1">
-              <p class="font-bold text-sm text-green-800">📢 Ada Update Pengajuan!</p>
-              <p id="notifPengajuanText" class="text-[11px] text-green-700 mt-1"></p>
-            </div>
-            <button onclick="document.getElementById('notifPengajuan').classList.add('hidden')" class="text-green-600 text-lg">✕</button>
-          </div>
-        </div>
-        
-        <!-- RIWAYAT PENGAJUAN -->
+        <!-- Ijin/Sakit -->
         <div class="bg-white rounded-[24px] p-4 shadow-sm">
-          <p class="font-bold text-sm mb-3"><i class="fa-solid fa-clock-rotate-left text-amber-500"></i> Riwayat Pengajuan Saya</p>
+          <p class="font-bold text-sm mb-2"><i class="fa-solid fa-file-medical text-blue-500"></i> Ijin / Sakit</p>
+          <select id="ijinJenis" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2 font-bold">
+            <option value="SAKIT">Sakit (dengan surat dokter)</option>
+            <option value="IJIN">Ijin Pribadi (dengan keterangan)</option>
+          </select>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <input type="date" id="ijinMulai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
+            <input type="date" id="ijinSelesai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
+          </div>
+          <textarea id="ijinKet" placeholder="Keterangan (misal: Menikah, ada undangan)" class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
+          <button onclick="openCamera('ijin')" class="w-full h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500 mb-3" id="btnIjin">📷 Upload Bukti (Surat Dokter/Undangan)</button>
+          <button onclick="submitIjinFinal()" class="w-full h-[48px] bg-blue-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN IJIN/SAKIT</button>
+        </div>
+        
+        <!-- Riwayat Pengajuan -->
+        <div class="bg-white rounded-[24px] p-4 shadow-sm">
+          <p class="font-bold text-sm mb-3"><i class="fa-solid fa-clock-rotate-left text-amber-500"></i> Riwayat Pengajuan</p>
           <div id="listPengajuan" class="space-y-2">
             <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
           </div>
         </div>
-        
-        <!-- SLIP GAJI -->
-        <div class="bg-white rounded-[24px] p-4 shadow-sm">
-          <p class="font-bold text-sm mb-3"><i class="fa-solid fa-money-bill-wave text-green-500"></i> Slip Gaji Saya</p>
-          <div id="listSlipGaji" class="space-y-2">
-            <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
+      </div>
+
+      <!-- TAB PROFIL -->
+      <div id="tab-profil" class="hidden space-y-4">
+        <div class="bg-white rounded-[24px] p-4 shadow-sm text-center">
+          <div class="w-20 h-20 rounded-full bg-amber-400 flex items-center justify-center font-bold text-3xl text-slate-900 mx-auto mb-3" id="avatarProfil">-</div>
+          <p class="font-bold text-lg" id="namaProfil">-</p>
+          <p class="text-[11px] text-slate-500" id="roleProfil">-</p>
+        </div>
+        <div class="bg-white rounded-[24px] p-4 shadow-sm space-y-3">
+          <p class="font-bold text-sm mb-2"><i class="fa-solid fa-user text-amber-500"></i> Data Profil</p>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400">NAMA LENGKAP</label>
+            <p id="profilNama" class="text-[12px] font-bold text-slate-700">-</p>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400">ALAMAT</label>
+            <p id="profilAlamat" class="text-[12px] text-slate-700">-</p>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400">NO TELEPON</label>
+            <p id="profilTlp" class="text-[12px] text-slate-700">-</p>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400">EMAIL</label>
+            <p id="profilEmail" class="text-[12px] text-slate-700">-</p>
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-400">NIK</label>
+            <p id="profilNik" class="text-[12px] text-slate-700">-</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Nav 6 Menu dengan Badge -->
+    <!-- Bottom Nav 5 Menu -->
     <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex p-1 gap-1 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
       <button onclick="setTab('absen', this)" class="navBtn flex-1 h-[50px] bg-slate-900 text-white rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-fingerprint text-base"></i> ABSEN</button>
       <button onclick="setTab('patroli', this)" class="navBtn flex-1 h-[50px] bg-slate-100 text-slate-700 rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-route text-base"></i> PATROLI</button>
       <button onclick="setTab('kejadian', this)" class="navBtn flex-1 h-[50px] bg-slate-100 text-slate-700 rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-triangle-exclamation text-base text-red-500"></i> KEJADIAN</button>
-      <button onclick="setTab('ijin', this)" class="navBtn flex-1 h-[50px] bg-slate-100 text-slate-700 rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5 relative"><i class="fa-solid fa-file-medical text-base text-blue-500"></i> IJIN<span id="badgeIjin" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full items-center justify-center">0</span></button>
-      <button onclick="setTab('shift', this)" class="navBtn flex-1 h-[50px] bg-slate-100 text-slate-700 rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5 relative"><i class="fa-solid fa-right-left text-base text-purple-500"></i> SHIFT<span id="badgeShift" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold w-4 h-4 rounded-full items-center justify-center">0</span></button>
+      <button onclick="setTab('info', this)" class="navBtn flex-1 h-[50px] bg-slate-100 text-slate-700 rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-circle-info text-base text-blue-500"></i> INFO</button>
       <button onclick="setTab('profil', this)" class="navBtn flex-1 h-[50px] bg-slate-100 text-slate-700 rounded-xl text-[8px] font-bold active:scale-95 transition flex flex-col items-center justify-center gap-0.5"><i class="fa-solid fa-user text-base"></i> PROFIL</button>
     </div>
   </div>
@@ -179,7 +198,8 @@
   <!-- Modal Kamera -->
   <div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col">
     <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
-      <p id="cameraTitle" class="mb-4 text-sm font-bold text-amber-400">Ambil Foto</p>
+      <p id="cameraTitle" class="mb-2 text-sm font-bold text-amber-400">Ambil Foto</p>
+      <p id="cameraTimemark" class="mb-4 text-[10px] text-white/60 mono"></p>
       <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
       <button onclick="document.getElementById('cameraInput').click()" class="bg-amber-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-lg mb-4 shadow-lg active:scale-95 transition">📸 Buka Kamera</button>
       <img id="previewImage" class="max-w-full max-h-[50vh] rounded-xl hidden border-2 border-amber-400 shadow-lg">
@@ -187,7 +207,7 @@
     </div>
     <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
       <button onclick="closeCamera()" class="text-white/70 font-bold">BATAL</button>
-      <button id="btnSendPhoto" onclick="sendPhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold hidden shadow-lg active:scale-95 transition">✅ PAKAI FOTO</button>
+      <button id="btnSendPhoto" onclick="sendPhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold hidden shadow-lg active:scale-95 transition">✅ KIRIM</button>
     </div>
   </div>
 
