@@ -54,7 +54,7 @@ function updateAbsenUI() {
   }
 }
 
-// ===== JAM DIGITAL & TANGGAL =====
+// ===== JAM DIGITAL & TANGGAL LENGKAP (Masehi + Pasaran Jawa) =====
 function updateJamDigital() {
   const now = new Date();
   const jam = String(now.getHours()).padStart(2, '0');
@@ -64,56 +64,43 @@ function updateJamDigital() {
   if (jamEl) jamEl.innerText = `${jam}:${menit}:${detik}`;
 }
 
-function updateTanggalMasehi() {
+function hitungHariPasaran() {
+  // Hari pasaran Jawa: Legi, Pahing, Pon, Wage, Kliwon
+  const pasaran = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
+  // Referensi: 1 Januari 1900 = Legi
+  const referensi = new Date(1900, 0, 1);
+  const sekarang = new Date();
+  const selisihHari = Math.floor((sekarang - referensi) / (1000 * 60 * 60 * 24));
+  const indexPasaran = ((selisihHari % 5) + 5) % 5;
+  return pasaran[indexPasaran];
+}
+
+function updateTanggalLengkap() {
   const now = new Date();
-  const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const hariMasehi = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   
-  const hariNama = hari[now.getDay()];
+  const hariNama = hariMasehi[now.getDay()];
+  const pasaran = hitungHariPasaran();
   const tanggal = now.getDate();
   const bulanNama = bulan[now.getMonth()];
   const tahun = now.getFullYear();
   
-  const tglEl = document.getElementById('tanggalMasehi');
-  if (tglEl) tglEl.innerText = `${hariNama}, ${tanggal} ${bulanNama} ${tahun}`;
-}
-
-// ===== HARI PASARAN JAWA =====
-function hitungHariPasaran() {
-  // Hari pasaran Jawa: Legi, Pahing, Pon, Wage, Kliwon
-  const pasaran = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
-  
-  // Tanggal referensi: 1 Januari 1900 adalah hari Legi
-  const referensi = new Date(1900, 0, 1); // 1 Jan 1900
-  const sekarang = new Date();
-  
-  // Hitung selisih hari
-  const selisihHari = Math.floor((sekarang - referensi) / (1000 * 60 * 60 * 24));
-  
-  // Hitung index pasaran (berputar setiap 5 hari)
-  const indexPasaran = ((selisihHari % 5) + 5) % 5;
-  
-  return pasaran[indexPasaran];
-}
-
-function updateHariPasaran() {
-  const pasaran = hitungHariPasaran();
-  const pasaranEl = document.getElementById('hariPasaran');
-  if (pasaranEl) pasaranEl.innerText = `Hari Pasaran: ${pasaran}`;
+  // Format: "Kamis Kliwon, 15 Oktober 2026"
+  const tglEl = document.getElementById('tanggalLengkap');
+  if (tglEl) tglEl.innerText = `${hariNama} ${pasaran}, ${tanggal} ${bulanNama} ${tahun}`;
 }
 
 // Update semua waktu setiap detik
 function startClock() {
   updateJamDigital();
-  updateTanggalMasehi();
-  updateHariPasaran();
+  updateTanggalLengkap();
   setInterval(() => {
     updateJamDigital();
-    // Update tanggal hanya saat pergantian hari
+    // Update tanggal hanya saat pergantian hari (00:00:01)
     const now = new Date();
-    if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
-      updateTanggalMasehi();
-      updateHariPasaran();
+    if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() <= 2) {
+      updateTanggalLengkap();
     }
   }, 1000);
 }
