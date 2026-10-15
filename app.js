@@ -54,6 +54,70 @@ function updateAbsenUI() {
   }
 }
 
+// ===== JAM DIGITAL & TANGGAL =====
+function updateJamDigital() {
+  const now = new Date();
+  const jam = String(now.getHours()).padStart(2, '0');
+  const menit = String(now.getMinutes()).padStart(2, '0');
+  const detik = String(now.getSeconds()).padStart(2, '0');
+  const jamEl = document.getElementById('jamDigital');
+  if (jamEl) jamEl.innerText = `${jam}:${menit}:${detik}`;
+}
+
+function updateTanggalMasehi() {
+  const now = new Date();
+  const hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  
+  const hariNama = hari[now.getDay()];
+  const tanggal = now.getDate();
+  const bulanNama = bulan[now.getMonth()];
+  const tahun = now.getFullYear();
+  
+  const tglEl = document.getElementById('tanggalMasehi');
+  if (tglEl) tglEl.innerText = `${hariNama}, ${tanggal} ${bulanNama} ${tahun}`;
+}
+
+// ===== HARI PASARAN JAWA =====
+function hitungHariPasaran() {
+  // Hari pasaran Jawa: Legi, Pahing, Pon, Wage, Kliwon
+  const pasaran = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
+  
+  // Tanggal referensi: 1 Januari 1900 adalah hari Legi
+  const referensi = new Date(1900, 0, 1); // 1 Jan 1900
+  const sekarang = new Date();
+  
+  // Hitung selisih hari
+  const selisihHari = Math.floor((sekarang - referensi) / (1000 * 60 * 60 * 24));
+  
+  // Hitung index pasaran (berputar setiap 5 hari)
+  const indexPasaran = ((selisihHari % 5) + 5) % 5;
+  
+  return pasaran[indexPasaran];
+}
+
+function updateHariPasaran() {
+  const pasaran = hitungHariPasaran();
+  const pasaranEl = document.getElementById('hariPasaran');
+  if (pasaranEl) pasaranEl.innerText = `Hari Pasaran: ${pasaran}`;
+}
+
+// Update semua waktu setiap detik
+function startClock() {
+  updateJamDigital();
+  updateTanggalMasehi();
+  updateHariPasaran();
+  setInterval(() => {
+    updateJamDigital();
+    // Update tanggal hanya saat pergantian hari
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
+      updateTanggalMasehi();
+      updateHariPasaran();
+    }
+  }, 1000);
+}
+
 // ===== LOGIN =====
 async function doLogin() {
   const u = document.getElementById('inpUser').value.trim(); const p = document.getElementById('inpPass').value.trim();
@@ -480,6 +544,7 @@ function doLogout() {
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   startGPS();
+  startClock(); // TAMBAHKAN BARIS INI
   if (currentUser && selectedLokasi) { document.getElementById('screen-login').classList.add('hidden'); showMainScreen(); }
   else if (currentUser) { document.getElementById('screen-login').classList.add('hidden'); loadLokasi(); }
 });
