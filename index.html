@@ -164,15 +164,21 @@
     </div>
   </div>
 
-  <!-- SUB: REKAP ABSENSI -->
-  <div id="info-sub-rekap" class="hidden space-y-3">
-    <div class="bg-white rounded-[24px] p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <p class="font-bold text-sm"><i class="fa-solid fa-calendar-check text-blue-500"></i> Rekap Absensi</p>
-        <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
-      </div>
-      <select id="rekapBulan" onchange="loadRekapAbsensi()" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3 font-bold">
-        <option value="">Semua Bulan</option>
+  <!-- SUB: REKAP ABSENSI (Desain Kalender) -->
+<div id="info-sub-rekap" class="hidden space-y-3">
+  <div class="bg-white rounded-[24px] p-4 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-bold text-sm flex items-center gap-2">
+        <i class="fa-solid fa-calendar-days text-blue-600"></i> Rekap Absensi
+      </p>
+      <button onclick="loadRekapAbsensi()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1 active:scale-95 transition">
+        <i class="fa-solid fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+    
+    <!-- Pilih Bulan -->
+    <div class="mb-4">
+      <select id="rekapBulan" onchange="loadRekapAbsensi()" class="w-full h-11 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none font-bold text-slate-700">
         <option value="2026-01">Januari 2026</option>
         <option value="2026-02">Februari 2026</option>
         <option value="2026-03">Maret 2026</option>
@@ -186,11 +192,79 @@
         <option value="2026-11">November 2026</option>
         <option value="2026-12">Desember 2026</option>
       </select>
-      <div id="listRekapAbsen" class="space-y-2">
-        <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
+    </div>
+    
+    <!-- 4 Card Statistik (2x2) -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-white border-l-4 border-green-500 rounded-xl p-3 shadow-sm">
+        <p class="text-[11px] text-slate-500">Hadir</p>
+        <p id="statHadir" class="text-2xl font-extrabold text-green-600">0</p>
+      </div>
+      <div class="bg-white border-l-4 border-orange-500 rounded-xl p-3 shadow-sm">
+        <p class="text-[11px] text-slate-500">Izin</p>
+        <p id="statIjin" class="text-2xl font-extrabold text-orange-500">0</p>
+      </div>
+      <div class="bg-white border-l-4 border-blue-500 rounded-xl p-3 shadow-sm">
+        <p class="text-[11px] text-slate-500">Sakit</p>
+        <p id="statSakit" class="text-2xl font-extrabold text-blue-600">0</p>
+      </div>
+      <div class="bg-white border-l-4 border-red-500 rounded-xl p-3 shadow-sm">
+        <p class="text-[11px] text-slate-500">Alpha</p>
+        <p id="statAlpha" class="text-2xl font-extrabold text-red-600">0</p>
+      </div>
+    </div>
+    
+    <!-- Kalender Absensi -->
+    <div class="mb-4">
+      <p class="font-bold text-sm mb-3 flex items-center gap-2">
+        <span class="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px]">📅</span> 
+        Kalender Absensi
+      </p>
+      <!-- Header Hari -->
+      <div class="grid grid-cols-7 gap-1 mb-2">
+        <div class="text-center text-[11px] font-bold text-slate-400">M</div>
+        <div class="text-center text-[11px] font-bold text-slate-400">S</div>
+        <div class="text-center text-[11px] font-bold text-slate-400">S</div>
+        <div class="text-center text-[11px] font-bold text-slate-400">R</div>
+        <div class="text-center text-[11px] font-bold text-slate-400">K</div>
+        <div class="text-center text-[11px] font-bold text-slate-400">J</div>
+        <div class="text-center text-[11px] font-bold text-slate-400">S</div>
+      </div>
+      <!-- Grid Tanggal -->
+      <div id="kalenderGrid" class="grid grid-cols-7 gap-1">
+        <!-- Diisi oleh JS -->
+      </div>
+      <!-- Legend -->
+      <div class="flex gap-3 mt-3 text-[9px] text-slate-500">
+        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-green-200"></div> Lengkap</div>
+        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded bg-yellow-200"></div> Tidak Lengkap</div>
+        <div class="flex items-center gap-1"><div class="w-3 h-3 rounded border-2 border-blue-500"></div> Hari Ini</div>
+      </div>
+    </div>
+    
+    <!-- Detail Harian -->
+    <div>
+      <p class="font-bold text-sm mb-3 flex items-center gap-2">
+        <i class="fa-solid fa-clipboard-list text-blue-600"></i> Detail Harian
+      </p>
+      <div class="overflow-x-auto rounded-xl border border-slate-200">
+        <table class="w-full text-[11px]">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600">
+              <th class="py-2 px-2 text-left font-bold">Tgl</th>
+              <th class="py-2 px-2 text-center font-bold">Masuk</th>
+              <th class="py-2 px-2 text-center font-bold">Pulang</th>
+              <th class="py-2 px-2 text-center font-bold">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tabelDetailHarian" class="bg-white">
+            <tr><td colspan="4" class="py-6 text-center text-slate-400">Pilih tanggal di kalender untuk melihat detail</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
+</div>
 
   <!-- SUB: TUKAR SHIFT -->
   <div id="info-sub-shift" class="hidden space-y-3">
