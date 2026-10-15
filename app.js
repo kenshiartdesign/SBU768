@@ -523,49 +523,207 @@ function backToInfoMenu() {
   document.getElementById('info-menu-utama').classList.remove('hidden');
 }
 
-// ===== REKAP ABSENSI =====
+// ===== REKAP ABSENSI (Desain Kalender) =====
+let rekapDataGlobal = {}; // Simpan data rekap untuk klik kalender
+
 async function loadRekapAbsensi() {
   if (!currentUser) return;
   const bulan = document.getElementById('rekapBulan').value;
-  const listEl = document.getElementById('listRekapAbsen');
+  
+  // Default: bulan ini
+  const bulanAktif = bulan || (() => {
+    const now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  })();
+  
+  if (!bulan) document.getElementById('rekapBulan').value = bulanAktif;
+  
+  const [tahun, bln] = bulanAktif.split('-').map(Number);
   
   try {
-    let url = `${CONFIG.GAS_URL}?action=getRekap&username=${currentUser.username}`;
-    if (bulan) url += `&bulan=${bulan}`;
+    // Ambil data absensi
+    const resAbsen = await fetch(`${CONFIG.GAS_URL}?action=getRekap&username=${currentUser.username}&bulan=${bulanAktif}`);
+    const resultAbsen = await resAbsen.json();
     
-    const res = await fetch(url);
-    const result = await res.json();
+    // Ambil data ijin
+    const resIjin = await fetch(`${CONFIG.GAS_URL}?action=getPengajuanUser&username=${currentUser.username}`);
+    const resultIjin = await resIjin.json();
     
-    if (result.status !== 'success' || !result.data || result.data.length === 0) {
-      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Tidak ada data absensi.</p>';
-      return;
-    }
+    const absenList = (resultAbsen.status === 'success' && resultAbsen.data) ? resultAbsen.data : [];
+    const ijinList = (resultIjin.status === 'success' && resultIjin.data && resultIjin.data.ijin) 
+      ? resultIjin.data.ijin.filter(i => {
+          if (i.status !== 'APPROVED') return false;
+          const tglMulai = new Date(i.tanggal_mulai);
+          return tglMulai.getFullYear() === tahun && (tglMulai.getMonth() + 1) === bln;
+        }) : [];
     
-    listEl.innerHTML = result.data.map(a => {
+    // Group absen per tanggal
+    const grouped = {};
+    absenList.forEach(a => {
       const tgl = new Date(a.timestamp);
-      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      const jenisColor = a.jenis === 'MASUK' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
-      const jenisIcon = a.jenis === 'MASUK' ? 'fa-right-to-bracket' : 'fa-right-from-bracket';
-      
-      return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-        <div class="flex justify-between items-start mb-1">
-          <div class="flex items-center gap-2">
-            <i class="fa-solid ${jenisIcon} ${a.jenis === 'MASUK' ? 'text-green-600' : 'text-amber-600'}"></i>
-            <p class="font-bold text-xs ${a.jenis === 'MASUK' ? 'text-green-700' : 'text-amber-700'}">ABSEN ${a.jenis}</p>
-          </div>
-          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${jenisColor}">${a.jenis}</span>
-        </div>
-        <p class="text-[10px] text-slate-600">📅 ${tglStr} • ⏰ ${jamStr}</p>
-        <p class="text-[10px] text-slate-500">📍 ${a.lokasi || '-'}</p>
-        <p class="text-[10px] text-slate-500">📏 Jarak: ${a.jarak || 0}m</p>
-        ${a.foto ? `<a href="${a.foto}" target="_blank" class="inline-block mt-2 text-[10px] bg-blue-600 text-white px-2 py-1 rounded-lg font-bold">📷 Lihat Foto</a>` : ''}
-      </div>`;
-    }).join('');
+      const key = tgl.getFullYear() + '-' + String(tgl.getMonth() + 1).padStart(2, '0') + '-' + String(tgl.getDate()).padStart(2, '0');
+      if (!grouped[key]) grouped[key] = { masuk: null, pulang: null, lokasi: a.lokasi, timestamp: a.timestamp };
+      if (a.jenis === 'MASUK' && !grouped[key].masuk) {
+        grouped[key].masuk = { jam: tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), foto: a.foto };
+      }
+      if (a.jenis === 'PULANG' && !grouped[key].pulang) {
+        grouped[key].pulang = { jam: tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), foto: a.foto };
+      }
+    });
+    
+    // Simpan untuk klik kalender
+    rekapDataGlobal = { grouped, ijinList, tahun, bln };
+    
+    // Hitung statistik
+    const hariKerja = getHariKerjaBulan(tahun, bln);
+    const hariDenganAbsen = Object.keys(grouped).length;
+    const hariIjin = ijinList.length;
+    const hadirCount = hariDenganAbsen;
+    const alphaCount = Math.max(0, hariKerja - hariDenganAbsen - hariIjin);
+    
+    document.getElementById('statHadir').innerText = hadirCount;
+    document.getElementById('statIjin').innerText = hariIjin;
+    document.getElementById('statSakit').innerText = '0';
+    document.getElementById('statAlpha').innerText = alphaCount;
+    
+    // Render Kalender
+    renderKalender(tahun, bln, grouped, ijinList);
+    
+    // Render detail semua tanggal (default)
+    renderDetailHarian(grouped, ijinList, null);
+    
   } catch (e) {
     console.error('Gagal load rekap:', e);
-    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Gagal memuat data.</p>';
   }
+}
+
+function renderKalender(tahun, bln, grouped, ijinList) {
+  const gridEl = document.getElementById('kalenderGrid');
+  const firstDay = new Date(tahun, bln - 1, 1);
+  const daysInMonth = new Date(tahun, bln, 0).getDate();
+  
+  // Offset hari pertama (0=Minggu, 1=Senin, ..., 6=Sabtu)
+  // Kita mulai dari Senin, jadi offset: Minggu=6, Senin=0, ..., Sabtu=5
+  let offset = firstDay.getDay() - 1;
+  if (offset < 0) offset = 6;
+  
+  const today = new Date();
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  
+  let html = '';
+  
+  // Cell kosong untuk offset
+  for (let i = 0; i < offset; i++) {
+    html += '<div class="aspect-square"></div>';
+  }
+  
+  // Cell tanggal
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = tahun + '-' + String(bln).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const data = grouped[dateStr];
+    const adaIjin = ijinList.some(i => {
+      const mulai = new Date(i.tanggal_mulai);
+      const selesai = new Date(i.tanggal_selesai);
+      const cur = new Date(tahun, bln - 1, d);
+      return cur >= mulai && cur <= selesai;
+    });
+    
+    let bgClass = 'bg-slate-100 text-slate-700';
+    let borderClass = '';
+    
+    if (adaIjin) {
+      bgClass = 'bg-orange-100 text-orange-700';
+    } else if (data) {
+      if (data.masuk && data.pulang) {
+        bgClass = 'bg-green-200 text-green-800'; // LENGKAP
+      } else {
+        bgClass = 'bg-yellow-200 text-yellow-800'; // TIDAK LENGKAP
+      }
+    }
+    
+    if (dateStr === todayStr) {
+      borderClass = 'border-2 border-blue-500';
+    }
+    
+    html += `<div onclick="pilihTanggalKalender('${dateStr}')" class="aspect-square rounded-lg ${bgClass} ${borderClass} flex items-center justify-center text-sm font-bold cursor-pointer hover:scale-105 transition active:scale-95">${d}</div>`;
+  }
+  
+  gridEl.innerHTML = html;
+}
+
+function pilihTanggalKalender(dateStr) {
+  const { grouped, ijinList } = rekapDataGlobal;
+  const data = grouped[dateStr];
+  const adaIjin = ijinList.some(i => {
+    const mulai = new Date(i.tanggal_mulai);
+    const selesai = new Date(i.tanggal_selesai);
+    const cur = new Date(dateStr);
+    return cur >= mulai && cur <= selesai;
+  });
+  
+  renderDetailHarian(grouped, ijinList, dateStr);
+}
+
+function renderDetailHarian(grouped, ijinList, filterTanggal) {
+  const tabelEl = document.getElementById('tabelDetailHarian');
+  const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+  
+  let displayKeys = filterTanggal ? [filterTanggal] : sortedKeys;
+  
+  if (displayKeys.length === 0) {
+    tabelEl.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-slate-400">Tidak ada data absensi.</td></tr>';
+    return;
+  }
+  
+  const hariNama = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  
+  tabelEl.innerHTML = displayKeys.map(key => {
+    const d = new Date(key);
+    const tglStr = String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+    const data = grouped[key];
+    
+    const adaIjin = ijinList.some(i => {
+      const mulai = new Date(i.tanggal_mulai);
+      const selesai = new Date(i.tanggal_selesai);
+      return d >= mulai && d <= selesai;
+    });
+    
+    let statusBadge = '';
+    if (adaIjin) {
+      statusBadge = '<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-bold">Izin</span>';
+    } else if (data && data.masuk && data.pulang) {
+      statusBadge = '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold">Lengkap</span>';
+    } else if (data && (data.masuk || data.pulang)) {
+      statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[10px] font-bold">Tidak Lengkap</span>';
+    } else {
+      statusBadge = '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold">Alpha</span>';
+    }
+    
+    const masukCell = data && data.masuk 
+      ? `<a href="${data.masuk.foto || '#'}" target="_blank" class="inline-flex items-center gap-1 text-green-600 font-bold"><i class="fa-solid fa-arrow-right-to-bracket text-[10px]"></i> ${data.masuk.jam}</a>` 
+      : '<span class="text-slate-300">-</span>';
+    const pulangCell = data && data.pulang 
+      ? `<a href="${data.pulang.foto || '#'}" target="_blank" class="inline-flex items-center gap-1 text-red-600 font-bold"><i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i> ${data.pulang.jam}</a>` 
+      : '<span class="text-slate-300">-</span>';
+    
+    return `<tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+      <td class="py-2 px-2 font-bold text-slate-700">${tglStr}</td>
+      <td class="py-2 px-2 text-center">${masukCell}</td>
+      <td class="py-2 px-2 text-center">${pulangCell}</td>
+      <td class="py-2 px-2 text-center">${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Helper: Hitung hari kerja (Senin-Sabtu) dalam 1 bulan
+function getHariKerjaBulan(tahun, bulan) {
+  let count = 0;
+  const daysInMonth = new Date(tahun, bulan, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const day = new Date(tahun, bulan - 1, d).getDay();
+    if (day !== 0) count++; // Bukan Minggu
+  }
+  return count;
 }
 
 // ===== NAVIGASI TAB =====
