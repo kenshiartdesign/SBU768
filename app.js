@@ -11,7 +11,9 @@ let capturedBase64 = null;
 let patroliData = { foto1: '', foto2: '' };
 let kejadianData = { foto1: '', foto2: '' };
 let ijinData = { foto: '' };
+let lastPengajuanStatus = JSON.parse(localStorage.getItem('sbu_last_pengajuan') || '{}');
 
+// ===== LOADING =====
 function showLoading(show) {
   const overlay = document.getElementById('loadingOverlay');
   if (show) {
@@ -25,6 +27,7 @@ function showLoading(show) {
   } else { if (overlay) overlay.remove(); }
 }
 
+// ===== GPS =====
 function startGPS() {
   if (!navigator.geolocation) return;
   navigator.geolocation.watchPosition(p => {
@@ -42,6 +45,17 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function updateAbsenUI() {
+  if (!gps || !selectedLokasi) return;
+  const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
+  const el = document.getElementById('absenJarak');
+  const isValid = jarak <= selectedLokasi.radius_meter;
+  if (el) {
+    el.innerHTML = `Jarak: <span class="${isValid ? 'text-green-600' : 'text-red-600'}">${jarak.toFixed(0)}m</span> / Max: ${selectedLokasi.radius_meter}m <br> <span class="text-[10px] text-slate-500">${isValid ? '✅ Anda berada di dalam area' : '❌ Anda berada di luar area'}</span>`;
+  }
+}
+
+// ===== LOGIN =====
 async function doLogin() {
   const u = document.getElementById('inpUser').value.trim(); const p = document.getElementById('inpPass').value.trim();
   if (!u || !p) return;
@@ -60,6 +74,7 @@ async function doLogin() {
   } catch (e) { alert('Koneksi gagal: ' + e.message); } finally { showLoading(false); }
 }
 
+// ===== LOKASI =====
 async function loadLokasi() {
   showLoading(true);
   try {
@@ -93,18 +108,10 @@ function showMainScreen() {
   
   updateAbsenUI();
   loadSlipGaji();
+  loadPengajuanUser(); // Load notifikasi pengajuan
 }
 
-function updateAbsenUI() {
-  if (!gps || !selectedLokasi) return;
-  const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
-  const el = document.getElementById('absenJarak');
-  const isValid = jarak <= selectedLokasi.radius_meter;
-  if (el) {
-    el.innerHTML = `Jarak: <span class="${isValid ? 'text-green-600' : 'text-red-600'}">${jarak.toFixed(0)}m</span> / Max: ${selectedLokasi.radius_meter}m <br> <span class="text-[10px] text-slate-500">${isValid ? '✅ Anda berada di dalam area' : '❌ Anda berada di luar area'}</span>`;
-  }
-}
-
+// ===== KAMERA & KOMPRESI =====
 function compressImage(file, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve) => {
     const reader = new FileReader(); reader.readAsDataURL(file);
@@ -176,6 +183,13 @@ function updateBtn(id, text) {
   alert('Foto berhasil disimpan!');
 }
 
+function resetBtn(id, text) {
+  const btn = document.getElementById(id);
+  btn.innerText = text;
+  btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
+}
+
+// ===== SUBMIT ABSEN =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const payload = {
@@ -192,6 +206,7 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
   else { alert('❌ Gagal: ' + result.message); }
 }
 
+// ===== SUBMIT PATROLI =====
 async function submitPatroliFinal() {
   if (!patroliData.foto1 || !patroliData.foto2) return alert('Harap ambil kedua foto patroli!');
   showLoading(true);
@@ -212,6 +227,7 @@ async function submitPatroliFinal() {
   showLoading(false);
 }
 
+// ===== SUBMIT KEJADIAN =====
 async function submitKejadianFinal() {
   if (!kejadianData.foto1 || !kejadianData.foto2) return alert('Harap ambil kedua bukti foto!');
   showLoading(true);
@@ -234,6 +250,7 @@ async function submitKejadianFinal() {
   showLoading(false);
 }
 
+// ===== SUBMIT IJIN =====
 async function submitIjinFinal() {
   showLoading(true);
   const payload = {
@@ -255,7 +272,7 @@ async function submitIjinFinal() {
   showLoading(false);
 }
 
-// ===== FUNGSI BARU: TUKAR SHIFT =====
+// ===== SUBMIT TUKAR SHIFT =====
 async function submitShiftFinal() {
   const tanggal = document.getElementById('shiftTanggal').value;
   const shiftLama = document.getElementById('shiftLama').value;
@@ -299,6 +316,118 @@ async function submitShiftFinal() {
   showLoading(false);
 }
 
+// ===== NOTIFIKASI & RIWAYAT PENGAJUAN =====
+async function loadPengajuanUser() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPengajuanUser&username=${currentUser.username}`);
+    const result = await res.json();
+    
+    if (result.status !== 'success') return;
+    
+    const data = result.data;
+    const listEl = document.getElementById('listPengajuan');
+    const allPengajuan = [];
+    
+    let pendingIjin = 0;
+    let pendingShift = 0;
+    let notifMessages = [];
+    
+    // Proses data Ijin
+    if (data.ijin && data.ijin.length > 0) {
+      data.ijin.forEach(p => {
+        pendingIjin += (p.status === 'PENDING' ? 1 : 0);
+        allPengajuan.push({ type: 'IJIN', ...p });
+        
+        const key = 'ijin_' + p.id;
+        const oldStatus = lastPengajuanStatus[key];
+        if (oldStatus && oldStatus !== p.status && p.status !== 'PENDING') {
+          notifMessages.push(`📋 Ijin ${p.jenis} (${p.tanggal_mulai}) telah di-${p.status === 'APPROVED' ? '✅ Setujui' : ' Tolak'} oleh admin.`);
+        }
+        lastPengajuanStatus[key] = p.status;
+      });
+    }
+    
+    // Proses data Shift
+    if (data.shift && data.shift.length > 0) {
+      data.shift.forEach(p => {
+        pendingShift += (p.status === 'PENDING' ? 1 : 0);
+        allPengajuan.push({ type: 'SHIFT', ...p });
+        
+        const key = 'shift_' + p.id;
+        const oldStatus = lastPengajuanStatus[key];
+        if (oldStatus && oldStatus !== p.status && p.status !== 'PENDING') {
+          notifMessages.push(`🔄 Tukar Shift (${p.tanggal}) ke Shift ${p.shift_baru} telah di-${p.status === 'APPROVED' ? '✅ Setujui' : '❌ Tolak'} oleh admin.`);
+        }
+        lastPengajuanStatus[key] = p.status;
+      });
+    }
+    
+    // Update Badge
+    updateBadge('badgeIjin', pendingIjin);
+    updateBadge('badgeShift', pendingShift);
+    
+    // Tampilkan Notifikasi jika ada perubahan
+    if (notifMessages.length > 0) {
+      const notifEl = document.getElementById('notifPengajuan');
+      const notifText = document.getElementById('notifPengajuanText');
+      notifText.innerHTML = notifMessages.join('<br>');
+      notifEl.classList.remove('hidden');
+    }
+    
+    // Simpan status terakhir
+    localStorage.setItem('sbu_last_pengajuan', JSON.stringify(lastPengajuanStatus));
+    
+    // Render list pengajuan
+    allPengajuan.reverse();
+    if (allPengajuan.length === 0) {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Belum ada pengajuan.</p>';
+    } else {
+      listEl.innerHTML = allPengajuan.map(p => {
+        let statusColor = p.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 
+                          p.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '❌';
+        
+        if (p.type === 'IJIN') {
+          return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-start mb-1">
+              <p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ${p.jenis}</p>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span>
+            </div>
+            <p class="text-[10px] text-slate-600">📅 ${p.tanggal_mulai} s/d ${p.tanggal_selesai}</p>
+            <p class="text-[10px] text-slate-500 mt-1">💬 ${p.keterangan || '-'}</p>
+          </div>`;
+        } else {
+          return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-start mb-1">
+              <p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span>
+            </div>
+            <p class="text-[10px] text-slate-600">📅 ${p.tanggal} | ${p.shift_lama} → ${p.shift_baru}</p>
+            <p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ${p.pengganti}</p>
+            <p class="text-[10px] text-slate-500">💬 ${p.alasan || '-'}</p>
+          </div>`;
+        }
+      }).join('');
+    }
+  } catch (e) {
+    console.error('Gagal load pengajuan:', e);
+  }
+}
+
+function updateBadge(elementId, count) {
+  const badge = document.getElementById(elementId);
+  if (count > 0) {
+    badge.innerText = count;
+    badge.classList.remove('hidden');
+    badge.classList.add('flex');
+  } else {
+    badge.classList.add('hidden');
+    badge.classList.remove('flex');
+  }
+}
+
+// ===== SLIP GAJI =====
 async function loadSlipGaji() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getSlipGaji&username=${currentUser.username}`);
@@ -317,22 +446,30 @@ async function loadSlipGaji() {
   } catch (e) { console.error(e); }
 }
 
-function resetBtn(id, text) {
-  const btn = document.getElementById(id);
-  btn.innerText = text;
-  btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
-}
-
-function setTab(t) {
+// ===== NAVIGASI TAB =====
+function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('tab-' + t).classList.remove('hidden');
-  if (t === 'profil') loadSlipGaji();
+  
+  // Update warna tombol nav
+  document.querySelectorAll('.navBtn').forEach(btn => {
+    btn.className = btn.className.replace('bg-slate-900 text-white', 'bg-slate-100 text-slate-700');
+  });
+  if (btnElement) {
+    btnElement.className = btnElement.className.replace('bg-slate-100 text-slate-700', 'bg-slate-900 text-white');
+  }
+  
+  // Refresh data saat buka tab tertentu
+  if (t === 'profil') { loadSlipGaji(); loadPengajuanUser(); }
+  if (t === 'ijin' || t === 'shift') loadPengajuanUser();
 }
 
+// ===== LOGOUT =====
 function doLogout() {
   if(confirm('Yakin ingin keluar?')) { localStorage.clear(); location.reload(); }
 }
 
+// ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   startGPS();
   if (currentUser && selectedLokasi) { document.getElementById('screen-login').classList.add('hidden'); showMainScreen(); }
