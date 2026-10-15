@@ -1,28 +1,97 @@
 <!DOCTYPE html>
-<html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>PT SBU - Absensi</title><meta name="theme-color" content="#0f172a"><link rel="manifest" href="./manifest.json"><link rel="icon" href="./icon-192.png"><script src="https://cdn.tailwindcss.com"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"><style>.no-scrollbar::-webkit-scrollbar{display:none} .mono{font-family:monospace}</style></head><body class="bg-[#0f172a] text-white">
-<div id="installBlock" class="fixed inset-0 z-[9999] bg-[#0f172a] flex flex-col items-center justify-center p-6 text-center">
-<div class="w-20 h-20 rounded-3xl bg-amber-400 flex items-center justify-center text-3xl mb-6"><i class="fa-solid fa-shield-halved text-slate-900"></i></div>
-<h1 class="font-extrabold text-xl">PT SENTRA BHAKTI UTAMA</h1><p class="text-white/60 text-[12px] mt-1 tracking-widest">SECURITY MANAGEMENT SYSTEM</p>
-<div class="mt-6 bg-white/5 border border-white/10 rounded-[24px] p-5 w-full max-w-[360px]">
-<div class="flex justify-between items-center mb-3"><h2 class="font-bold text-[14px] text-left">Instal Aplikasi</h2><span id="installBadge" class="text-[10px] bg-white/10 text-white/60 px-2 py-1 rounded-full">Checking...</span></div>
-<p class="text-white/60 text-[11px] text-left">Aplikasi bisa jalan tanpa install. Install untuk mode full & anti fake-GPS.</p>
-<button id="btnInstall" class="mt-4 w-full h-[48px] rounded-2xl bg-amber-400 text-slate-900 font-extrabold text-[13px] active:scale-95 transition">📲 INSTALL SEKARANG</button>
-<button id="btnContinue" class="mt-2 w-full h-[44px] rounded-2xl bg-white text-slate-900 font-bold text-[12px] border active:scale-95 transition">➡️ LANJUTKAN DI BROWSER (BISA DIKLIK)</button>
-<div id="iosHint" class="hidden mt-3 bg-amber-400/10 border border-amber-400/20 rounded-xl p-2 text-left"><p class="text-amber-300 text-[10px]">iPhone: Share > Add to Home Screen</p></div>
-<div class="mt-4 bg-black/60 rounded-xl p-2 text-left"><p class="text-[9px] text-white/30 font-bold">DEBUG (kirim screenshot ini jika gagal):</p><pre id="pwaStatus" class="text-[8px] text-green-400 mono whitespace-pre-wrap mt-1">Starting...
-</pre></div>
-<button id="btnReset" class="mt-2 text-white/20 text-[9px] underline">Reset Cache & Reload</button>
-</div>
-<p class="text-white/20 text-[9px] mt-4">Demo login: satpam01 / 123456</p>
-</div>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PT SBU - Absensi</title>
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon-192.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>.no-scrollbar::-webkit-scrollbar{display:none} .mono{font-family:monospace}</style>
+</head>
+<body class="bg-[#0f172a] text-white">
 
-<div id="screen-login" class="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6"><h1 class="font-extrabold text-lg">LOGIN SATPAM</h1><input id="inpUser" value="satpam01" class="mt-6 h-[48px] rounded-2xl bg-white text-slate-900 px-4 font-bold w-full max-w-[360px]"><input id="inpPass" value="123456" type="password" class="mt-3 h-[48px] rounded-2xl bg-white text-slate-900 px-4 font-bold w-full max-w-[360px]"><p id="loginError" class="hidden text-red-400 text-[11px] mt-2"></p><button onclick="doLogin()" class="mt-4 w-full max-w-[360px] h-[48px] bg-amber-400 text-slate-900 rounded-2xl font-bold">MASUK</button><p class="text-white/40 text-[10px] mt-3">Demo: satpam01 / 123456 | admin / admin123</p></div>
+  <!-- Screen Login -->
+  <div id="screen-login" class="fixed inset-0 z-50 bg-[#0f172a] flex flex-col items-center justify-center p-6">
+    <div class="w-20 h-20 rounded-3xl bg-amber-400 flex items-center justify-center text-3xl mb-6"><i class="fa-solid fa-shield-halved text-slate-900"></i></div>
+    <h1 class="font-extrabold text-xl">PT SENTRA BHAKTI UTAMA</h1>
+    <p class="text-white/60 text-[12px] mt-1 tracking-widest">SECURITY MANAGEMENT SYSTEM</p>
+    
+    <input id="inpUser" placeholder="Username" class="mt-8 h-[48px] rounded-2xl bg-white text-slate-900 px-4 font-bold w-full max-w-[360px] outline-none">
+    <input id="inpPass" placeholder="Password" type="password" class="mt-3 h-[48px] rounded-2xl bg-white text-slate-900 px-4 font-bold w-full max-w-[360px] outline-none">
+    <p id="loginError" class="hidden text-red-400 text-[11px] mt-2"></p>
+    <button onclick="doLogin()" id="btnLogin" class="mt-4 w-full max-w-[360px] h-[48px] bg-amber-400 text-slate-900 rounded-2xl font-bold active:scale-95 transition">MASUK</button>
+  </div>
 
-<div id="screen-lokasi" class="fixed inset-0 z-40 bg-[#f8fafc] text-slate-900 hidden flex-col p-6"><h2 class="font-bold text-lg">Pilih Lokasi Kerja</h2><p id="gpsInfo" class="text-[11px] mono mt-2">Mencari GPS...</p><p id="gpsAccuracy" class="text-[10px] text-slate-500"></p><div id="listLokasi" class="mt-6 space-y-3"></div></div>
+  <!-- Screen Pilih Lokasi -->
+  <div id="screen-lokasi" class="fixed inset-0 z-40 bg-[#f8fafc] text-slate-900 hidden flex-col p-6">
+    <h2 class="font-bold text-lg">Pilih Lokasi Kerja</h2>
+    <p id="gpsInfo" class="text-[11px] mono mt-2 text-slate-500">Mencari GPS...</p>
+    <div id="listLokasi" class="mt-6 space-y-3"></div>
+  </div>
 
-<div id="screen-main" class="fixed inset-0 z-30 bg-[#f8fafc] text-slate-900 hidden flex-col"><div class="h-[64px] bg-[#0f172a] flex items-center justify-between px-4"><div class="flex items-center gap-3"><div id="avatarTop" class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-bold text-slate-900">BS</div><div><p id="namaTop" class="text-white font-bold text-[13px]">-</p><p id="lokasiTop" class="text-white/60 text-[10px]">-</p></div></div><button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button></div><div class="flex-1 overflow-y-auto p-4 pb-[90px]"><div id="tab-absen" class="space-y-4"><div class="bg-white rounded-[24px] p-4"><p class="text-[11px] font-bold text-slate-400">STATUS ABSEN</p><p id="absenJarak" class="text-[12px] mt-1">Menunggu GPS...</p></div><div class="grid grid-cols-2 gap-3"><button onclick="openCamera('masuk')" class="h-[80px] bg-[#0f172a] text-white rounded-[20px] font-bold">ABSEN MASUK</button><button onclick="openCamera('pulang')" class="h-[80px] bg-white border rounded-[20px] font-bold">ABSEN PULANG</button></div><p class="text-[10px] text-green-600 font-bold text-center">✅ Mode Demo Aktif - Bisa absen tanpa GAS</p></div><div id="tab-patroli" class="hidden"><button onclick="submitPatroli()" class="w-full h-[48px] bg-amber-400 rounded-xl font-bold">Kirim Patroli Mock</button></div><div id="tab-kejadian" class="hidden"></div><div id="info-gaji" class="hidden">Slip Gaji Demo</div><div id="info-shift" class="hidden">Tukar Shift</div><div id="info-ijin" class="hidden">Ijin</div></div><div class="fixed bottom-0 left-0 right-0 bg-white border-t flex p-2 gap-2"><button onclick="setTab('absen')" class="flex-1 h-[44px] bg-slate-900 text-white rounded-xl text-[11px] font-bold">ABSEN</button><button onclick="setTab('patroli')" class="flex-1 h-[44px] bg-slate-100 rounded-xl text-[11px] font-bold">PATROLI</button></div></div>
+  <!-- Screen Utama -->
+  <div id="screen-main" class="fixed inset-0 z-30 bg-[#f8fafc] text-slate-900 hidden flex-col">
+    <div class="h-[64px] bg-[#0f172a] flex items-center justify-between px-4 shadow-md">
+      <div class="flex items-center gap-3">
+        <div id="avatarTop" class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-bold text-slate-900">-</div>
+        <div>
+          <p id="namaTop" class="text-white font-bold text-[13px]">-</p>
+          <p id="lokasiTop" class="text-white/60 text-[10px]">-</p>
+        </div>
+      </div>
+      <button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto p-4 pb-[90px]">
+      <div id="tab-absen" class="space-y-4">
+        <div class="bg-white rounded-[24px] p-4 shadow-sm">
+          <p class="text-[11px] font-bold text-slate-400">STATUS GPS & ABSEN</p>
+          <p id="absenJarak" class="text-[12px] mt-1 font-bold text-slate-700">Menunggu GPS...</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="openCamera('masuk')" class="h-[80px] bg-[#0f172a] text-white rounded-[20px] font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-right-to-bracket text-xl"></i> ABSEN MASUK</button>
+          <button onclick="openCamera('pulang')" class="h-[80px] bg-white border-2 border-slate-200 text-slate-800 rounded-[20px] font-bold shadow-sm active:scale-95 transition flex flex-col items-center justify-center gap-1"><i class="fa-solid fa-right-from-bracket text-xl"></i> ABSEN PULANG</button>
+        </div>
+      </div>
+      
+      <div id="tab-patroli" class="hidden space-y-4">
+        <div class="bg-white rounded-[24px] p-4 shadow-sm">
+          <p class="font-bold text-sm mb-2">Form Laporan Patroli</p>
+          <textarea id="patroliCatatan" placeholder="Catatan kondisi lapangan..." class="w-full h-24 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="openCamera('patroli1')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli1">📷 Foto 1</button>
+            <button onclick="openCamera('patroli2')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2">📷 Foto 2</button>
+          </div>
+          <button onclick="submitPatroliFinal()" class="w-full mt-4 h-[48px] bg-amber-400 text-slate-900 rounded-xl font-bold shadow-lg active:scale-95 transition">KIRIM LAPORAN PATROLI</button>
+        </div>
+      </div>
+    </div>
 
-<div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col"><div class="flex-1 bg-slate-800 flex items-center justify-center text-white">Camera Mock</div><div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6"><button onclick="closeCamera()" class="text-white">BATAL</button><button onclick="usePhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold">KIRIM MOCK</button></div></div>
+    <!-- Bottom Nav -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t flex p-2 gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <button onclick="setTab('absen')" class="flex-1 h-[44px] bg-slate-900 text-white rounded-xl text-[11px] font-bold active:scale-95 transition">ABSEN</button>
+      <button onclick="setTab('patroli')" class="flex-1 h-[44px] bg-slate-100 text-slate-700 rounded-xl text-[11px] font-bold active:scale-95 transition">PATROLI</button>
+    </div>
+  </div>
 
-<script src="./app.js"></script>
-</body></html>
+  <!-- Modal Kamera Asli -->
+  <div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col">
+    <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
+      <p id="cameraTitle" class="mb-4 text-sm font-bold text-amber-400">Ambil Foto</p>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+      <button onclick="document.getElementById('cameraInput').click()" class="bg-amber-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-lg mb-4 shadow-lg active:scale-95 transition">📸 Buka Kamera</button>
+      <img id="previewImage" class="max-w-full max-h-[50vh] rounded-xl hidden border-2 border-amber-400 shadow-lg">
+      <p id="cameraHint" class="text-xs text-white/50 mt-2">Klik tombol di atas untuk membuka kamera perangkat</p>
+    </div>
+    <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
+      <button onclick="closeCamera()" class="text-white/70 font-bold hover:text-white">BATAL</button>
+      <button id="btnSendPhoto" onclick="sendPhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold hidden shadow-lg active:scale-95 transition">✅ KIRIM</button>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
