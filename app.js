@@ -87,13 +87,12 @@ function showMainScreen() {
   document.getElementById('avatarTop').innerText = currentUser.avatar;
   document.getElementById('lokasiTop').innerText = selectedLokasi.nama_lokasi;
   
-  // Update Profil Tab
   document.getElementById('namaProfil').innerText = currentUser.nama;
   document.getElementById('avatarProfil').innerText = currentUser.avatar;
   document.getElementById('roleProfil').innerText = currentUser.role.toUpperCase();
   
   updateAbsenUI();
-  loadSlipGaji(); // Load slip gaji saat masuk menu utama
+  loadSlipGaji();
 }
 
 function updateAbsenUI() {
@@ -208,7 +207,7 @@ async function submitPatroliFinal() {
   if (result.status === 'success') {
     alert('✅ ' + result.message);
     patroliData = { foto1: '', foto2: '' }; document.getElementById('patroliCatatan').value = '';
-    resetBtn('btnPatroli1', '📷 Foto 1'); resetBtn('btnPatroli2', '📷 Foto 2');
+    resetBtn('btnPatroli1', ' Foto 1'); resetBtn('btnPatroli2', '📷 Foto 2');
   } else { alert('❌ Gagal: ' + result.message); }
   showLoading(false);
 }
@@ -256,6 +255,50 @@ async function submitIjinFinal() {
   showLoading(false);
 }
 
+// ===== FUNGSI BARU: TUKAR SHIFT =====
+async function submitShiftFinal() {
+  const tanggal = document.getElementById('shiftTanggal').value;
+  const shiftLama = document.getElementById('shiftLama').value;
+  const shiftBaru = document.getElementById('shiftBaru').value;
+  const penggantiUser = document.getElementById('shiftPenggantiUser').value.trim();
+  const penggantiNama = document.getElementById('shiftPenggantiNama').value.trim();
+  const alasan = document.getElementById('shiftAlasan').value.trim();
+  
+  if (!tanggal || !penggantiUser || !penggantiNama || !alasan) {
+    return alert('Harap lengkapi semua data pengajuan!');
+  }
+  if (shiftLama === shiftBaru) {
+    return alert('Shift lama dan baru tidak boleh sama!');
+  }
+  
+  showLoading(true);
+  const payload = {
+    action: 'tukarShift',
+    username_pemohon: currentUser.username,
+    nama_pemohon: currentUser.nama,
+    tanggal_tukar: tanggal,
+    shift_lama: shiftLama,
+    shift_baru: shiftBaru,
+    username_pengganti: penggantiUser,
+    nama_pengganti: penggantiNama,
+    alasan: alasan
+  };
+  
+  const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+  const result = await res.json();
+  
+  if (result.status === 'success') {
+    alert('✅ ' + result.message + '\n\nMenunggu approval admin.');
+    document.getElementById('shiftTanggal').value = '';
+    document.getElementById('shiftPenggantiUser').value = '';
+    document.getElementById('shiftPenggantiNama').value = '';
+    document.getElementById('shiftAlasan').value = '';
+  } else {
+    alert('❌ Gagal: ' + result.message);
+  }
+  showLoading(false);
+}
+
 async function loadSlipGaji() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getSlipGaji&username=${currentUser.username}`);
@@ -283,7 +326,6 @@ function resetBtn(id, text) {
 function setTab(t) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('tab-' + t).classList.remove('hidden');
-  // Refresh data saat buka tab tertentu
   if (t === 'profil') loadSlipGaji();
 }
 
