@@ -500,6 +500,74 @@ async function loadSlipGaji() {
   } catch (e) { console.error(e); }
 }
 
+// ===== NAVIGASI SUB-MENU INFO =====
+function showInfoSub(subName) {
+  // Sembunyikan menu utama & semua sub
+  document.getElementById('info-menu-utama').classList.add('hidden');
+  document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
+  
+  // Tampilkan sub yang dipilih
+  const subEl = document.getElementById('info-sub-' + subName);
+  if (subEl) subEl.classList.remove('hidden');
+  
+  // Load data sesuai sub
+  if (subName === 'rekap') loadRekapAbsensi();
+  if (subName === 'riwayat') loadPengajuanUser();
+  if (subName === 'gaji') loadSlipGaji();
+}
+
+function backToInfoMenu() {
+  // Sembunyikan semua sub
+  document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
+  // Tampilkan menu utama
+  document.getElementById('info-menu-utama').classList.remove('hidden');
+}
+
+// ===== REKAP ABSENSI =====
+async function loadRekapAbsensi() {
+  if (!currentUser) return;
+  const bulan = document.getElementById('rekapBulan').value;
+  const listEl = document.getElementById('listRekapAbsen');
+  
+  try {
+    let url = `${CONFIG.GAS_URL}?action=getRekap&username=${currentUser.username}`;
+    if (bulan) url += `&bulan=${bulan}`;
+    
+    const res = await fetch(url);
+    const result = await res.json();
+    
+    if (result.status !== 'success' || !result.data || result.data.length === 0) {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Tidak ada data absensi.</p>';
+      return;
+    }
+    
+    listEl.innerHTML = result.data.map(a => {
+      const tgl = new Date(a.timestamp);
+      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      const jenisColor = a.jenis === 'MASUK' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+      const jenisIcon = a.jenis === 'MASUK' ? 'fa-right-to-bracket' : 'fa-right-from-bracket';
+      
+      return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <div class="flex justify-between items-start mb-1">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid ${jenisIcon} ${a.jenis === 'MASUK' ? 'text-green-600' : 'text-amber-600'}"></i>
+            <p class="font-bold text-xs ${a.jenis === 'MASUK' ? 'text-green-700' : 'text-amber-700'}">ABSEN ${a.jenis}</p>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${jenisColor}">${a.jenis}</span>
+        </div>
+        <p class="text-[10px] text-slate-600">📅 ${tglStr} • ⏰ ${jamStr}</p>
+        <p class="text-[10px] text-slate-500">📍 ${a.lokasi || '-'}</p>
+        <p class="text-[10px] text-slate-500">📏 Jarak: ${a.jarak || 0}m</p>
+        ${a.foto ? `<a href="${a.foto}" target="_blank" class="inline-block mt-2 text-[10px] bg-blue-600 text-white px-2 py-1 rounded-lg font-bold">📷 Lihat Foto</a>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    console.error('Gagal load rekap:', e);
+    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Gagal memuat data.</p>';
+  }
+}
+
 // ===== NAVIGASI TAB =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
@@ -513,7 +581,10 @@ function setTab(t, btnElement) {
   }
   
   if (t === 'absen') checkAbsenStatus();
-  if (t === 'info') { loadSlipGaji(); loadPengajuanUser(); }
+  if (t === 'info') {
+    // Reset ke menu utama setiap kali buka tab Info
+    backToInfoMenu();
+  }
   if (t === 'profil') {
     document.getElementById('profilNama').innerText = currentUser.nama;
     document.getElementById('profilAlamat').innerText = currentUser.alamat || '-';
