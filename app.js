@@ -170,12 +170,16 @@ async function showMainScreen() {
   loadPengajuanUser();
 }
 
-// ===== CEK STATUS ABSEN (FIXED) =====
+// ===== CEK STATUS ABSEN (RELIABLE) =====
 async function checkAbsenStatus() {
   if (!currentUser) return;
+  
   try {
+    console.log('Checking absen status for:', currentUser.username);
     const res = await fetch(`${CONFIG.GAS_URL}?action=getAbsenStatus&username=${currentUser.username}`);
     const result = await res.json();
+    
+    console.log('Absen status result:', result);
     
     if (result.status === 'success') {
       const btnMasuk = document.getElementById('btnAbsenMasuk');
@@ -183,29 +187,40 @@ async function checkAbsenStatus() {
       const pesanEl = document.getElementById('absenPesan');
       
       // Update tombol MASUK
-      if (result.tombol_masuk) {
+      if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnMasuk.innerHTML = '<i class="fa-solid fa-right-to-bracket text-2xl"></i><span class="text-base font-bold">ABSEN MASUK</span>';
         btnMasuk.onclick = () => openCamera('masuk');
+        console.log('Tombol MASUK diaktifkan');
       } else {
         btnMasuk.disabled = true;
         btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnMasuk.innerHTML = '<i class="fa-solid fa-right-to-bracket text-2xl"></i><span class="text-base font-bold">ABSEN MASUK</span>';
         btnMasuk.onclick = null;
+        console.log('Tombol MASUK dinonaktifkan');
       }
       
       // Update tombol PULANG
-      if (result.tombol_pulang) {
+      if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
         btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnPulang.innerHTML = '<i class="fa-solid fa-right-from-bracket text-2xl"></i><span class="text-base font-bold">ABSEN PULANG</span>';
         btnPulang.onclick = () => openCamera('pulang');
+        console.log('Tombol PULANG diaktifkan (HIJAU)');
       } else {
         btnPulang.disabled = true;
         btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnPulang.innerHTML = '<i class="fa-solid fa-right-from-bracket text-2xl"></i><span class="text-base font-bold">ABSEN PULANG</span>';
         btnPulang.onclick = null;
+        console.log('Tombol PULANG dinonaktifkan');
       }
       
       // Update pesan
-      if (pesanEl) pesanEl.innerText = result.pesan || '';
+      if (pesanEl) {
+        pesanEl.innerText = result.pesan || '';
+        pesanEl.className = 'text-sm font-bold mt-2 ' + (result.pesan && result.pesan.includes('terkunci') ? 'text-red-600' : 'text-amber-600');
+      }
     }
   } catch (e) { 
     console.error('Gagal cek status absen:', e); 
@@ -304,7 +319,7 @@ function resetBtn(id, text) {
   btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== SUBMIT ABSEN (FIXED - panggil checkAbsenStatus setelah berhasil) =====
+// ===== SUBMIT ABSEN (RELIABLE - dengan reload manual) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const now = new Date();
@@ -325,8 +340,13 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
     
     if (result.status === 'success') { 
       alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
-      // PENTING: Panggil checkAbsenStatus untuk update tombol
-      await checkAbsenStatus();
+      
+      // PENTING: Tunggu sebentar lalu refresh status
+      setTimeout(async () => {
+        console.log('Refreshing status after absen...');
+        await checkAbsenStatus();
+      }, 500);
+      
     } else { 
       alert('❌ Gagal: ' + result.message); 
     }
