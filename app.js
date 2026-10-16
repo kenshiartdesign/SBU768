@@ -145,12 +145,14 @@ async function loadLokasi() {
   } catch (e) { alert('Gagal memuat lokasi: ' + e.message); } finally { showLoading(false); }
 }
 
+// ===== SHOW MAIN SCREEN =====
 async function showMainScreen() {
   document.getElementById('screen-lokasi').classList.add('hidden');
   const sm = document.getElementById('screen-main'); sm.classList.remove('hidden'); sm.classList.add('flex');
   document.getElementById('namaTop').innerText = currentUser.nama;
   document.getElementById('avatarTop').innerText = currentUser.avatar;
   document.getElementById('lokasiTop').innerText = selectedLokasi.nama_lokasi;
+  document.getElementById('infoLokasiAbsen').innerText = selectedLokasi.nama_lokasi;
   
   // Update Profil
   document.getElementById('namaProfil').innerText = currentUser.nama;
@@ -168,36 +170,46 @@ async function showMainScreen() {
   loadPengajuanUser();
 }
 
-// ===== CEK STATUS ABSEN (untuk cooldown) =====
+// ===== CEK STATUS ABSEN (FIXED) =====
 async function checkAbsenStatus() {
   if (!currentUser) return;
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getAbsenStatus&username=${currentUser.username}`);
     const result = await res.json();
+    
     if (result.status === 'success') {
       const btnMasuk = document.getElementById('btnAbsenMasuk');
       const btnPulang = document.getElementById('btnAbsenPulang');
       const pesanEl = document.getElementById('absenPesan');
       
+      // Update tombol MASUK
       if (result.tombol_masuk) {
         btnMasuk.disabled = false;
-        btnMasuk.className = 'h-[80px] bg-[#0f172a] text-white rounded-[20px] font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
+        btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnMasuk.onclick = () => openCamera('masuk');
       } else {
         btnMasuk.disabled = true;
-        btnMasuk.className = 'h-[80px] bg-slate-300 text-slate-500 rounded-[20px] font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnMasuk.onclick = null;
       }
       
+      // Update tombol PULANG
       if (result.tombol_pulang) {
         btnPulang.disabled = false;
-        btnPulang.className = 'h-[80px] bg-amber-400 text-slate-900 rounded-[20px] font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
+        btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnPulang.onclick = () => openCamera('pulang');
       } else {
         btnPulang.disabled = true;
-        btnPulang.className = 'h-[80px] bg-slate-300 text-slate-500 rounded-[20px] font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+        btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnPulang.onclick = null;
       }
       
+      // Update pesan
       if (pesanEl) pesanEl.innerText = result.pesan || '';
     }
-  } catch (e) { console.error('Gagal cek status absen:', e); }
+  } catch (e) { 
+    console.error('Gagal cek status absen:', e); 
+  }
 }
 
 // ===== KAMERA & KOMPRESI =====
@@ -292,7 +304,7 @@ function resetBtn(id, text) {
   btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== SUBMIT ABSEN =====
+// ===== SUBMIT ABSEN (FIXED - panggil checkAbsenStatus setelah berhasil) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const now = new Date();
@@ -306,12 +318,21 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
     accuracy: Math.round(gps.accuracy), is_mock: 'NO',
     timemark: timemark, foto_base64: fotoBase64
   };
-  const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-  const result = await response.json();
-  if (result.status === 'success') { 
-    alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
-    await checkAbsenStatus(); // Update tombol
-  } else { alert(' Gagal: ' + result.message); }
+  
+  try {
+    const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const result = await response.json();
+    
+    if (result.status === 'success') { 
+      alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
+      // PENTING: Panggil checkAbsenStatus untuk update tombol
+      await checkAbsenStatus();
+    } else { 
+      alert('❌ Gagal: ' + result.message); 
+    }
+  } catch (e) {
+    alert('❌ Koneksi gagal: ' + e.message);
+  }
 }
 
 // ===== SUBMIT PATROLI =====
