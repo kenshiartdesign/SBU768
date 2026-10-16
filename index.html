@@ -69,17 +69,22 @@
 </div>
   
   <!-- Screen Utama -->
-  <div id="screen-main" class="fixed inset-0 z-30 bg-[#f8fafc] text-slate-900 hidden flex-col">
-    <div class="h-[64px] bg-[#0f172a] flex items-center justify-between px-4 shadow-md">
-      <div class="flex items-center gap-3">
-        <div id="avatarTop" class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-bold text-slate-900">-</div>
-        <div>
-          <p id="namaTop" class="text-white font-bold text-[13px]">-</p>
-          <p id="lokasiTop" class="text-white/60 text-[10px]">-</p>
-        </div>
+<div id="screen-main" class="fixed inset-0 z-30 bg-[#f8fafc] text-slate-900 hidden flex-col">
+  <div class="h-[64px] bg-[#0f172a] flex items-center justify-between px-4 shadow-md">
+    <div class="flex items-center gap-3">
+      <!-- Tombol Kembali ke Pilih Lokasi -->
+      <button onclick="kembaliKePilihLokasi()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center active:scale-95 transition" title="Ganti Lokasi">
+        <i class="fa-solid fa-arrow-left text-[12px]"></i>
+      </button>
+      
+      <div id="avatarTop" class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-bold text-slate-900">-</div>
+      <div>
+        <p id="namaTop" class="text-white font-bold text-[13px]">-</p>
+        <p id="lokasiTop" class="text-white/60 text-[10px]">-</p>
       </div>
-      <button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button>
     </div>
+    <button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button>
+  </div>
     
     <div class="flex-1 overflow-y-auto p-4 pb-[90px]">
       
