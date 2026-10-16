@@ -50,7 +50,7 @@ function updateAbsenUI() {
   const el = document.getElementById('absenJarak');
   const isValid = jarak <= selectedLokasi.radius_meter;
   if (el) {
-    el.innerHTML = `Jarak: <span class="${isValid ? 'text-green-600' : 'text-red-600'}">${jarak.toFixed(0)}m</span> / Max: ${selectedLokasi.radius_meter}m <br> <span class="text-[10px] text-slate-500">${isValid ? '✅ Dalam area' : '❌ Luar area'}</span>`;
+    el.innerHTML = `<span class="${isValid ? 'text-green-600' : 'text-red-600'}">${jarak.toFixed(0)}m</span> <span class="text-slate-500">/ Max: ${selectedLokasi.radius_meter}m</span>`;
   }
 }
 
@@ -751,7 +751,6 @@ function getHariKerjaBulan(tahun, bulan) {
   return count;
 }
 
-// ===== NAVIGASI TAB =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('tab-' + t).classList.remove('hidden');
@@ -763,9 +762,9 @@ function setTab(t, btnElement) {
     btnElement.className = btnElement.className.replace('bg-slate-100 text-slate-700', 'bg-slate-900 text-white');
   }
   
-  if (t === 'absen') checkAbsenStatus();
+  // Refresh data saat buka tab tertentu
+  if (t === 'absen') checkAbsenStatus(); // PENTING: Refresh status tombol absen
   if (t === 'info') {
-    // Reset ke menu utama setiap kali buka tab Info
     backToInfoMenu();
   }
   if (t === 'profil') {
