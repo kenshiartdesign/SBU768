@@ -170,7 +170,7 @@ async function showMainScreen() {
   loadPengajuanUser();
 }
 
-// ===== CEK STATUS ABSEN (DIPANGGIL SETIAP HALAMAN DIMUAT) =====
+// ===== CEK STATUS ABSEN (ANTI CACHE & PAKSA RESET) =====
 async function checkAbsenStatus() {
   if (!currentUser) return;
   
@@ -178,17 +178,36 @@ async function checkAbsenStatus() {
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
   
-  // Cek localStorage dulu
-  const savedStatus = JSON.parse(localStorage.getItem('sbu_absen_status') || 'null');
-  
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getAbsenStatus&username=${currentUser.username}`);
+    // 1. CACHE BUSTER: Menambahkan timestamp agar browser WAJIB tanya server, bukan pakai cache
+    const url = `${CONFIG.GAS_URL}?action=getAbsenStatus&username=${encodeURIComponent(currentUser.username)}&t=${Date.now()}`;
+    const res = await fetch(url);
     const result = await res.json();
     
-    console.log('[checkAbsenStatus] Server response:', result);
+    console.log('[Server Response]:', result);
     
     if (result.status === 'success') {
-      // Update tombol MASUK
+      // 2. PAKSA RESET: Jika server bilang tidak ada data (karena baru dihapus manual)
+      if (!result.last_masuk && !result.last_pulang) {
+        console.log('Data di server kosong. Memaksa reset tombol...');
+        localStorage.removeItem('sbu_absen_status'); // Hapus memori HP
+        
+        btnMasuk.disabled = false;
+        btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnMasuk.onclick = () => openCamera('masuk');
+        
+        btnPulang.disabled = true;
+        btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnPulang.onclick = null;
+        
+        if (pesanEl) {
+          pesanEl.innerText = 'Silakan absen masuk.';
+          pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
+        }
+        return; // Berhenti di sini, jangan jalankan logika di bawah
+      }
+
+      // 3. Logika Normal (Jika memang ada data absen)
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -199,7 +218,6 @@ async function checkAbsenStatus() {
         btnMasuk.onclick = null;
       }
       
-      // Update tombol PULANG
       if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
         btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -210,58 +228,22 @@ async function checkAbsenStatus() {
         btnPulang.onclick = null;
       }
       
-      // Update pesan
       if (pesanEl) {
         pesanEl.innerText = result.pesan || '';
-        if (result.pesan && result.pesan.includes('sudah absen masuk')) {
-          pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
-        } else if (result.pesan && result.pesan.toLowerCase().includes('terkunci')) {
-          pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
-        } else {
-          pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
-        }
+        if (result.pesan.includes('sudah absen masuk')) pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
+        else if (result.pesan.toLowerCase().includes('terkunci')) pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
+        else pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
       }
       
-      // Update localStorage
+      // Simpan ke localStorage HANYA jika server mengonfirmasi ada data
       if (result.last_masuk && !result.last_pulang) {
-        localStorage.setItem('sbu_absen_status', JSON.stringify({
-          last_action: 'masuk',
-          timestamp: new Date(result.last_masuk).toISOString()
-        }));
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'masuk', timestamp: new Date(result.last_masuk).toISOString() }));
       } else if (result.last_pulang) {
-        localStorage.setItem('sbu_absen_status', JSON.stringify({
-          last_action: 'pulang',
-          timestamp: new Date(result.last_pulang).toISOString()
-        }));
-      } else {
-        localStorage.removeItem('sbu_absen_status');
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'pulang', timestamp: new Date(result.last_pulang).toISOString() }));
       }
     }
   } catch (e) { 
     console.error('[checkAbsenStatus] Error:', e);
-    // Fallback ke localStorage
-    if (savedStatus) {
-      if (savedStatus.last_action === 'masuk') {
-        btnMasuk.disabled = true;
-        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
-        btnPulang.disabled = false;
-        btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
-        btnPulang.onclick = () => openCamera('pulang');
-        if (pesanEl) {
-          pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.';
-          pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
-        }
-      } else if (savedStatus.last_action === 'pulang') {
-        btnMasuk.disabled = true;
-        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
-        btnPulang.disabled = true;
-        btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
-        if (pesanEl) {
-          pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.';
-          pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
-        }
-      }
-    }
   }
 }
 
