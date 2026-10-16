@@ -632,7 +632,7 @@ function renderKalender(tahun, bln, grouped, ijinList) {
   
   // Cell kosong untuk offset
   for (let i = 0; i < offset; i++) {
-    html += '<div class="h-7"></div>'; // Tinggi tetap 28px, lebih kecil
+    html += '<div class="h-11"></div>'; // 44px touch target
   }
   
   // Cell tanggal
@@ -646,7 +646,7 @@ function renderKalender(tahun, bln, grouped, ijinList) {
       return cur >= mulai && cur <= selesai;
     });
     
-    let bgClass = 'bg-slate-100 text-slate-600';
+    let bgClass = 'bg-slate-100 text-slate-700';
     let borderClass = '';
     
     if (adaIjin) {
@@ -660,19 +660,14 @@ function renderKalender(tahun, bln, grouped, ijinList) {
     }
     
     if (dateStr === todayStr) {
-      borderClass = 'border border-blue-500 ring-1 ring-blue-400';
+      borderClass = 'border-2 border-blue-500';
     }
     
-    // Ukuran lebih kecil: h-7 (28px) dan text-[10px]
-    html += `<div onclick="pilihTanggalKalender('${dateStr}')" class="h-7 rounded flex items-center justify-center text-[10px] font-bold cursor-pointer hover:scale-110 transition active:scale-95 ${bgClass} ${borderClass}">${d}</div>`;
+    // Ukuran standar mobile: h-11 (44px) dan text-sm (14px)
+    html += `<div onclick="pilihTanggalKalender('${dateStr}')" class="h-11 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer hover:scale-105 transition active:scale-95 ${bgClass} ${borderClass}">${d}</div>`;
   }
   
   gridEl.innerHTML = html;
-}
-
-function pilihTanggalKalender(dateStr) {
-  const { grouped, ijinList } = rekapDataGlobal;
-  renderDetailHarian(grouped, ijinList, dateStr);
 }
 
 function renderDetailHarian(grouped, ijinList, filterTanggal) {
@@ -682,7 +677,7 @@ function renderDetailHarian(grouped, ijinList, filterTanggal) {
   let displayKeys = filterTanggal ? [filterTanggal] : sortedKeys;
   
   if (displayKeys.length === 0) {
-    tabelEl.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400 text-[10px]">Tidak ada data absensi.</td></tr>';
+    tabelEl.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400 text-xs">Tidak ada data absensi.</td></tr>';
     return;
   }
   
@@ -699,27 +694,27 @@ function renderDetailHarian(grouped, ijinList, filterTanggal) {
     
     let statusBadge = '';
     if (adaIjin) {
-      statusBadge = '<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Izin</span>';
+      statusBadge = '<span class="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-bold">Izin</span>';
     } else if (data && data.masuk && data.pulang) {
-      statusBadge = '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Lengkap</span>';
+      statusBadge = '<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">Lengkap</span>';
     } else if (data && (data.masuk || data.pulang)) {
-      statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Tdk Lengkap</span>';
+      statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-bold">Tdk Lengkap</span>';
     } else {
-      statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Alpha</span>';
+      statusBadge = '<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">Alpha</span>';
     }
     
     const masukCell = data && data.masuk 
-      ? `<a href="${data.masuk.foto || '#'}" target="_blank" class="inline-flex items-center gap-0.5 text-green-600 font-bold text-[10px]"><i class="fa-solid fa-arrow-right-to-bracket text-[8px]"></i> ${data.masuk.jam}</a>` 
+      ? `<a href="${data.masuk.foto || '#'}" target="_blank" class="inline-flex items-center gap-1 text-green-600 font-bold text-xs"><i class="fa-solid fa-arrow-right-to-bracket text-xs"></i> ${data.masuk.jam}</a>` 
       : '<span class="text-slate-300">-</span>';
     const pulangCell = data && data.pulang 
-      ? `<a href="${data.pulang.foto || '#'}" target="_blank" class="inline-flex items-center gap-0.5 text-red-600 font-bold text-[10px]"><i class="fa-solid fa-arrow-right-from-bracket text-[8px]"></i> ${data.pulang.jam}</a>` 
+      ? `<a href="${data.pulang.foto || '#'}" target="_blank" class="inline-flex items-center gap-1 text-red-600 font-bold text-xs"><i class="fa-solid fa-arrow-right-from-bracket text-xs"></i> ${data.pulang.jam}</a>` 
       : '<span class="text-slate-300">-</span>';
     
     return `<tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-      <td class="py-1.5 px-1.5 font-bold text-slate-700 text-[10px]">${tglStr}</td>
-      <td class="py-1.5 px-1.5 text-center">${masukCell}</td>
-      <td class="py-1.5 px-1.5 text-center">${pulangCell}</td>
-      <td class="py-1.5 px-1.5 text-center">${statusBadge}</td>
+      <td class="py-2 px-2 font-bold text-slate-700 text-xs">${tglStr}</td>
+      <td class="py-2 px-2 text-center">${masukCell}</td>
+      <td class="py-2 px-2 text-center">${pulangCell}</td>
+      <td class="py-2 px-2 text-center">${statusBadge}</td>
     </tr>`;
   }).join('');
 }
