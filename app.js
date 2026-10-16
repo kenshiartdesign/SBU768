@@ -889,3 +889,23 @@ document.addEventListener('DOMContentLoaded', () => {
   if (currentUser && selectedLokasi) { document.getElementById('screen-login').classList.add('hidden'); showMainScreen(); }
   else if (currentUser) { document.getElementById('screen-login').classList.add('hidden'); loadLokasi(); }
 });
+
+// ===== AUTO CHECK STATUS SETIAP HALAMAN DIMUAT/REFRESH =====
+window.addEventListener('pageshow', (event) => {
+  console.log('[pageshow] Halaman dimuat/refresh');
+  if (currentUser && selectedLokasi) {
+    setTimeout(() => {
+      checkAbsenStatus();
+    }, 500);
+  }
+});
+
+// Listen untuk visibility change (saat user kembali ke tab)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && currentUser && selectedLokasi) {
+    console.log('[visibilitychange] User kembali ke tab');
+    setTimeout(() => {
+      checkAbsenStatus();
+    }, 300);
+  }
+});
