@@ -608,6 +608,29 @@ function setTab(t, btnElement) {
   }
 }
 
+// ===== KEMBALI KE PILIH LOKASI =====
+function kembaliKePilihLokasi() {
+  if (confirm('Yakin ingin mengganti lokasi kerja?\n\nAnda akan kembali ke halaman pilih lokasi.')) {
+    // Hapus data lokasi dari localStorage
+    localStorage.removeItem('sbu_lokasi');
+    selectedLokasi = null;
+    
+    // Sembunyikan screen utama
+    document.getElementById('screen-main').classList.add('hidden');
+    document.getElementById('screen-main').classList.remove('flex');
+    
+    // Tampilkan screen pilih lokasi
+    const sl = document.getElementById('screen-lokasi');
+    sl.classList.remove('hidden');
+    sl.classList.add('flex');
+    
+    // Reload daftar lokasi
+    loadLokasi();
+    
+    console.log('[kembaliKePilihLokasi] User kembali ke halaman pilih lokasi');
+  }
+}
+
 function doLogout() { if(confirm('Yakin ingin keluar?')) { localStorage.clear(); location.reload(); } }
 
 document.addEventListener('DOMContentLoaded', () => {
