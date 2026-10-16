@@ -523,8 +523,8 @@ function backToInfoMenu() {
   document.getElementById('info-menu-utama').classList.remove('hidden');
 }
 
-// ===== REKAP ABSENSI (Desain Kalender) =====
-let rekapDataGlobal = {}; // Simpan data rekap untuk klik kalender
+// ===== REKAP ABSENSI (Mobile Optimized + Alpha Akhir Bulan) =====
+let rekapDataGlobal = {};
 
 async function loadRekapAbsensi() {
   if (!currentUser) return;
@@ -539,6 +539,12 @@ async function loadRekapAbsensi() {
   if (!bulan) document.getElementById('rekapBulan').value = bulanAktif;
   
   const [tahun, bln] = bulanAktif.split('-').map(Number);
+  
+  // Cek apakah bulan sudah lewat (untuk perhitungan Alpha)
+  const now = new Date();
+  const nowTahun = now.getFullYear();
+  const nowBln = now.getMonth() + 1;
+  const bulanSudahLewat = (tahun < nowTahun) || (tahun === nowTahun && bln < nowBln);
   
   try {
     // Ambil data absensi
@@ -572,19 +578,32 @@ async function loadRekapAbsensi() {
     });
     
     // Simpan untuk klik kalender
-    rekapDataGlobal = { grouped, ijinList, tahun, bln };
+    rekapDataGlobal = { grouped, ijinList, tahun, bln, bulanSudahLewat };
     
     // Hitung statistik
     const hariKerja = getHariKerjaBulan(tahun, bln);
     const hariDenganAbsen = Object.keys(grouped).length;
     const hariIjin = ijinList.length;
     const hadirCount = hariDenganAbsen;
-    const alphaCount = Math.max(0, hariKerja - hariDenganAbsen - hariIjin);
+    
+    // Alpha: hanya hitung jika bulan sudah lewat
+    let alphaCount = '-';
+    let infoAlphaText = '* Alpha dihitung otomatis di akhir bulan';
+    
+    if (bulanSudahLewat) {
+      alphaCount = Math.max(0, hariKerja - hariDenganAbsen - hariIjin);
+      infoAlphaText = `✓ Alpha bulan ${['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'][bln-1]} ${tahun}: ${alphaCount} hari`;
+    } else if (tahun === nowTahun && bln === nowBln) {
+      infoAlphaText = `⏳ Bulan berjalan - Alpha akan dihitung di akhir bulan`;
+    } else {
+      infoAlphaText = `📅 Bulan mendatang - Alpha belum dapat dihitung`;
+    }
     
     document.getElementById('statHadir').innerText = hadirCount;
     document.getElementById('statIjin').innerText = hariIjin;
     document.getElementById('statSakit').innerText = '0';
     document.getElementById('statAlpha').innerText = alphaCount;
+    document.getElementById('infoAlpha').innerText = infoAlphaText;
     
     // Render Kalender
     renderKalender(tahun, bln, grouped, ijinList);
@@ -602,8 +621,7 @@ function renderKalender(tahun, bln, grouped, ijinList) {
   const firstDay = new Date(tahun, bln - 1, 1);
   const daysInMonth = new Date(tahun, bln, 0).getDate();
   
-  // Offset hari pertama (0=Minggu, 1=Senin, ..., 6=Sabtu)
-  // Kita mulai dari Senin, jadi offset: Minggu=6, Senin=0, ..., Sabtu=5
+  // Offset hari pertama
   let offset = firstDay.getDay() - 1;
   if (offset < 0) offset = 6;
   
@@ -614,7 +632,7 @@ function renderKalender(tahun, bln, grouped, ijinList) {
   
   // Cell kosong untuk offset
   for (let i = 0; i < offset; i++) {
-    html += '<div class="aspect-square"></div>';
+    html += '<div class="h-7"></div>'; // Tinggi tetap 28px, lebih kecil
   }
   
   // Cell tanggal
@@ -628,11 +646,11 @@ function renderKalender(tahun, bln, grouped, ijinList) {
       return cur >= mulai && cur <= selesai;
     });
     
-    let bgClass = 'bg-slate-100 text-slate-700';
+    let bgClass = 'bg-slate-100 text-slate-600';
     let borderClass = '';
     
     if (adaIjin) {
-      bgClass = 'bg-orange-100 text-orange-700';
+      bgClass = 'bg-orange-200 text-orange-800';
     } else if (data) {
       if (data.masuk && data.pulang) {
         bgClass = 'bg-green-200 text-green-800'; // LENGKAP
@@ -642,10 +660,11 @@ function renderKalender(tahun, bln, grouped, ijinList) {
     }
     
     if (dateStr === todayStr) {
-      borderClass = 'border-2 border-blue-500';
+      borderClass = 'border border-blue-500 ring-1 ring-blue-400';
     }
     
-    html += `<div onclick="pilihTanggalKalender('${dateStr}')" class="aspect-square rounded-lg ${bgClass} ${borderClass} flex items-center justify-center text-sm font-bold cursor-pointer hover:scale-105 transition active:scale-95">${d}</div>`;
+    // Ukuran lebih kecil: h-7 (28px) dan text-[10px]
+    html += `<div onclick="pilihTanggalKalender('${dateStr}')" class="h-7 rounded flex items-center justify-center text-[10px] font-bold cursor-pointer hover:scale-110 transition active:scale-95 ${bgClass} ${borderClass}">${d}</div>`;
   }
   
   gridEl.innerHTML = html;
@@ -653,14 +672,6 @@ function renderKalender(tahun, bln, grouped, ijinList) {
 
 function pilihTanggalKalender(dateStr) {
   const { grouped, ijinList } = rekapDataGlobal;
-  const data = grouped[dateStr];
-  const adaIjin = ijinList.some(i => {
-    const mulai = new Date(i.tanggal_mulai);
-    const selesai = new Date(i.tanggal_selesai);
-    const cur = new Date(dateStr);
-    return cur >= mulai && cur <= selesai;
-  });
-  
   renderDetailHarian(grouped, ijinList, dateStr);
 }
 
@@ -671,11 +682,9 @@ function renderDetailHarian(grouped, ijinList, filterTanggal) {
   let displayKeys = filterTanggal ? [filterTanggal] : sortedKeys;
   
   if (displayKeys.length === 0) {
-    tabelEl.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-slate-400">Tidak ada data absensi.</td></tr>';
+    tabelEl.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400 text-[10px]">Tidak ada data absensi.</td></tr>';
     return;
   }
-  
-  const hariNama = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
   
   tabelEl.innerHTML = displayKeys.map(key => {
     const d = new Date(key);
@@ -690,27 +699,27 @@ function renderDetailHarian(grouped, ijinList, filterTanggal) {
     
     let statusBadge = '';
     if (adaIjin) {
-      statusBadge = '<span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[10px] font-bold">Izin</span>';
+      statusBadge = '<span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Izin</span>';
     } else if (data && data.masuk && data.pulang) {
-      statusBadge = '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold">Lengkap</span>';
+      statusBadge = '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Lengkap</span>';
     } else if (data && (data.masuk || data.pulang)) {
-      statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-[10px] font-bold">Tidak Lengkap</span>';
+      statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Tdk Lengkap</span>';
     } else {
-      statusBadge = '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold">Alpha</span>';
+      statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-[9px] font-bold">Alpha</span>';
     }
     
     const masukCell = data && data.masuk 
-      ? `<a href="${data.masuk.foto || '#'}" target="_blank" class="inline-flex items-center gap-1 text-green-600 font-bold"><i class="fa-solid fa-arrow-right-to-bracket text-[10px]"></i> ${data.masuk.jam}</a>` 
+      ? `<a href="${data.masuk.foto || '#'}" target="_blank" class="inline-flex items-center gap-0.5 text-green-600 font-bold text-[10px]"><i class="fa-solid fa-arrow-right-to-bracket text-[8px]"></i> ${data.masuk.jam}</a>` 
       : '<span class="text-slate-300">-</span>';
     const pulangCell = data && data.pulang 
-      ? `<a href="${data.pulang.foto || '#'}" target="_blank" class="inline-flex items-center gap-1 text-red-600 font-bold"><i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i> ${data.pulang.jam}</a>` 
+      ? `<a href="${data.pulang.foto || '#'}" target="_blank" class="inline-flex items-center gap-0.5 text-red-600 font-bold text-[10px]"><i class="fa-solid fa-arrow-right-from-bracket text-[8px]"></i> ${data.pulang.jam}</a>` 
       : '<span class="text-slate-300">-</span>';
     
     return `<tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-      <td class="py-2 px-2 font-bold text-slate-700">${tglStr}</td>
-      <td class="py-2 px-2 text-center">${masukCell}</td>
-      <td class="py-2 px-2 text-center">${pulangCell}</td>
-      <td class="py-2 px-2 text-center">${statusBadge}</td>
+      <td class="py-1.5 px-1.5 font-bold text-slate-700 text-[10px]">${tglStr}</td>
+      <td class="py-1.5 px-1.5 text-center">${masukCell}</td>
+      <td class="py-1.5 px-1.5 text-center">${pulangCell}</td>
+      <td class="py-1.5 px-1.5 text-center">${statusBadge}</td>
     </tr>`;
   }).join('');
 }
