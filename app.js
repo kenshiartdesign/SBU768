@@ -170,7 +170,7 @@ async function showMainScreen() {
   loadPengajuanUser();
 }
 
-// ===== CEK STATUS ABSEN (DENGAN LOCALSTORAGE BACKUP) =====
+// ===== CEK STATUS ABSEN (DIPANGGIL SETIAP HALAMAN DIMUAT) =====
 async function checkAbsenStatus() {
   if (!currentUser) return;
   
@@ -178,14 +178,14 @@ async function checkAbsenStatus() {
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
   
-  // Cek localStorage dulu untuk status cepat
+  // Cek localStorage dulu
   const savedStatus = JSON.parse(localStorage.getItem('sbu_absen_status') || 'null');
   
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getAbsenStatus&username=${currentUser.username}`);
     const result = await res.json();
     
-    console.log('[checkAbsenStatus] Result dari server:', result);
+    console.log('[checkAbsenStatus] Server response:', result);
     
     if (result.status === 'success') {
       // Update tombol MASUK
@@ -193,12 +193,10 @@ async function checkAbsenStatus() {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
         btnMasuk.onclick = () => openCamera('masuk');
-        console.log('[checkAbsenStatus] Tombol MASUK diaktifkan (HITAM)');
       } else {
         btnMasuk.disabled = true;
         btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnMasuk.onclick = null;
-        console.log('[checkAbsenStatus] Tombol MASUK dinonaktifkan (ABU)');
       }
       
       // Update tombol PULANG
@@ -206,12 +204,10 @@ async function checkAbsenStatus() {
         btnPulang.disabled = false;
         btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
         btnPulang.onclick = () => openCamera('pulang');
-        console.log('[checkAbsenStatus] Tombol PULANG diaktifkan (HIJAU)');
       } else {
         btnPulang.disabled = true;
         btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnPulang.onclick = null;
-        console.log('[checkAbsenStatus] Tombol PULANG dinonaktifkan (ABU)');
       }
       
       // Update pesan
@@ -226,29 +222,25 @@ async function checkAbsenStatus() {
         }
       }
       
-      // Update localStorage dengan data dari server
+      // Update localStorage
       if (result.last_masuk && !result.last_pulang) {
         localStorage.setItem('sbu_absen_status', JSON.stringify({
           last_action: 'masuk',
           timestamp: new Date(result.last_masuk).toISOString()
         }));
-        console.log('[checkAbsenStatus] Saved to localStorage: last_action=masuk');
       } else if (result.last_pulang) {
         localStorage.setItem('sbu_absen_status', JSON.stringify({
           last_action: 'pulang',
           timestamp: new Date(result.last_pulang).toISOString()
         }));
-        console.log('[checkAbsenStatus] Saved to localStorage: last_action=pulang');
       } else {
         localStorage.removeItem('sbu_absen_status');
-        console.log('[checkAbsenStatus] Removed localStorage (belum absen)');
       }
     }
   } catch (e) { 
-    console.error('[checkAbsenStatus] Gagal cek status absen:', e);
-    // Fallback ke localStorage jika API gagal
+    console.error('[checkAbsenStatus] Error:', e);
+    // Fallback ke localStorage
     if (savedStatus) {
-      console.log('[checkAbsenStatus] Using localStorage fallback:', savedStatus);
       if (savedStatus.last_action === 'masuk') {
         btnMasuk.disabled = true;
         btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
@@ -273,99 +265,93 @@ async function checkAbsenStatus() {
   }
 }
 
-// ===== KAMERA & KOMPRESI =====
+// ===== KAMERA & KOMPRESI (KAMERA DEPAN + WATERMARK LENGKAP) =====
 function compressImage(file, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve) => {
-    const reader = new FileReader(); reader.readAsDataURL(file);
+    const reader = new FileReader(); 
+    reader.readAsDataURL(file);
     reader.onload = (event) => {
-      const img = new Image(); img.src = event.target.result;
+      const img = new Image(); 
+      img.src = event.target.result;
       img.onload = () => {
-        const canvas = document.createElement('canvas'); let width = img.width; let height = img.height;
-        if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
-        canvas.width = width; canvas.height = height;
-        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-        // Tambahkan timemark di foto
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, height - 40, width, 40);
-        ctx.fillStyle = 'white';
-        ctx.font = 'bold 14px monospace';
+        const canvas = document.createElement('canvas'); 
+        let width = img.width; 
+        let height = img.height;
+        
+        // Resize jika terlalu besar
+        if (width > maxWidth) { 
+          height = Math.round((height * maxWidth) / width); 
+          width = maxWidth; 
+        }
+        
+        canvas.width = width; 
+        canvas.height = height;
+        const ctx = canvas.getContext('2d'); 
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // ===== WATERMARK LENGKAP =====
         const now = new Date();
-        const timemark = `${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')} | ${gps ? gps.lat.toFixed(5)+','+gps.lng.toFixed(5) : 'No GPS'}`;
-        ctx.fillText(timemark, 10, height - 15);
+        const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const tanggal = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const statusText = currentCameraAction === 'masuk' ? 'ABSEN MASUK' : 'ABSEN PULANG';
+        const lokasiText = selectedLokasi ? selectedLokasi.nama_lokasi : 'Unknown';
+        const namaUser = currentUser ? currentUser.nama : 'Unknown';
+        
+        // Background hitam semi-transparan di bagian bawah
+        const watermarkHeight = 120;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, height - watermarkHeight, width, watermarkHeight);
+        
+        // Text 1: Status (ABSEN MASUK/PULANG) - Besar & Bold
+        ctx.fillStyle = '#fbbf24'; // Amber-400
+        ctx.font = 'bold 28px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(statusText, width / 2, height - watermarkHeight + 35);
+        
+        // Text 2: Nama User
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(namaUser, width / 2, height - watermarkHeight + 65);
+        
+        // Text 3: Tanggal & Jam
+        ctx.fillStyle = '#e5e7eb'; // Gray-200
+        ctx.font = '16px Arial';
+        ctx.fillText(tanggal, width / 2, height - watermarkHeight + 88);
+        
+        // Text 4: Jam
+        ctx.fillStyle = '#10b981'; // Green-500
+        ctx.font = 'bold 18px Arial';
+        ctx.fillText('⏰ ' + jam, width / 2, height - watermarkHeight + 110);
+        
+        // Text 5: Lokasi
+        ctx.fillStyle = '#3b82f6'; // Blue-500
+        ctx.font = '16px Arial';
+        ctx.fillText('📍 ' + lokasiText, width / 2, height - watermarkHeight + 135);
+        
+        // Text 6: Koordinat GPS
+        if (gps) {
+          ctx.fillStyle = '#9ca3af'; // Gray-400
+          ctx.font = '14px monospace';
+          ctx.fillText(gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), width / 2, height - watermarkHeight + 155);
+        }
+        
+        // Logo/Icon kecil di pojok kiri atas (opsional)
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.9)';
+        ctx.beginPath();
+        ctx.arc(40, 40, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('SBU', 40, 47);
+        
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
     };
   });
 }
 
-document.getElementById('cameraInput').addEventListener('change', async function(e) {
-  if (e.target.files && e.target.files[0]) {
-    showLoading(true);
-    capturedBase64 = await compressImage(e.target.files[0]);
-    const preview = document.getElementById('previewImage');
-    preview.src = capturedBase64; preview.classList.remove('hidden');
-    document.getElementById('btnSendPhoto').classList.remove('hidden');
-    document.getElementById('cameraHint').classList.add('hidden');
-    showLoading(false);
-  }
-});
-
-function openCamera(action) {
-  currentCameraAction = action; capturedBase64 = null;
-  document.getElementById('previewImage').classList.add('hidden');
-  document.getElementById('btnSendPhoto').classList.add('hidden');
-  document.getElementById('cameraHint').classList.remove('hidden');
-  document.getElementById('cameraInput').value = '';
-  
-  const titles = { 'masuk': 'Selfie Absen Masuk', 'pulang': 'Selfie Absen Pulang', 'patroli1': 'Foto Patroli 1', 'patroli2': 'Foto Patroli 2', 'kejadian1': 'Bukti Kejadian 1', 'kejadian2': 'Bukti Kejadian 2', 'ijin': 'Bukti Surat/Undangan' };
-  document.getElementById('cameraTitle').innerText = titles[action] || 'Ambil Foto';
-  
-  // Update timemark
-  const now = new Date();
-  const timemark = `${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
-  document.getElementById('cameraTimemark').innerText = `📍 ${selectedLokasi ? selectedLokasi.nama_lokasi : '-'} | ⏰ ${timemark}`;
-  
-  document.getElementById('cameraModal').classList.remove('hidden'); document.getElementById('cameraModal').classList.add('flex');
-}
-
-function closeCamera() {
-  document.getElementById('cameraModal').classList.add('hidden'); document.getElementById('cameraModal').classList.remove('flex');
-}
-
-async function sendPhoto() {
-  if (!capturedBase64) return;
-  closeCamera();
-  
-  if (currentCameraAction === 'masuk' || currentCameraAction === 'pulang') {
-    showLoading(true);
-    await submitAbsenToGAS(currentCameraAction, capturedBase64);
-    showLoading(false);
-  } else if (currentCameraAction === 'patroli1') {
-    patroliData.foto1 = capturedBase64; updateBtn('btnPatroli1', '✅ Foto 1');
-  } else if (currentCameraAction === 'patroli2') {
-    patroliData.foto2 = capturedBase64; updateBtn('btnPatroli2', '✅ Foto 2');
-  } else if (currentCameraAction === 'kejadian1') {
-    kejadianData.foto1 = capturedBase64; updateBtn('btnKejadian1', '✅ Bukti 1');
-  } else if (currentCameraAction === 'kejadian2') {
-    kejadianData.foto2 = capturedBase64; updateBtn('btnKejadian2', '✅ Bukti 2');
-  } else if (currentCameraAction === 'ijin') {
-    ijinData.foto = capturedBase64; updateBtn('btnIjin', '✅ Bukti Terlampir');
-  }
-}
-
-function updateBtn(id, text) {
-  const btn = document.getElementById(id);
-  btn.innerText = text;
-  btn.classList.add('bg-green-100', 'border-green-400', 'text-green-700');
-}
-
-function resetBtn(id, text) {
-  const btn = document.getElementById(id);
-  btn.innerText = text;
-  btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
-}
-
-// ===== SUBMIT ABSEN (DIRECT UI UPDATE - PASTI BEKERJA) =====
+// ===== SUBMIT ABSEN (DENGAN AUTO REFRESH STATUS) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const now = new Date();
@@ -387,9 +373,8 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
     if (result.status === 'success') { 
       alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
       
-      // LANGSUNG UPDATE UI SETELAH BERHASIL (tidak perlu tunggu API)
+      // LANGSUNG UPDATE UI SETELAH BERHASIL
       if (tipe === 'masuk') {
-        // Setelah masuk berhasil: Matikan tombol MASUK, Aktifkan tombol PULANG
         const btnMasuk = document.getElementById('btnAbsenMasuk');
         const btnPulang = document.getElementById('btnAbsenPulang');
         const pesanEl = document.getElementById('absenPesan');
@@ -407,14 +392,12 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
           pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
         }
         
-        // Simpan status di localStorage
         localStorage.setItem('sbu_absen_status', JSON.stringify({
           last_action: 'masuk',
           timestamp: now.toISOString()
         }));
         
       } else if (tipe === 'pulang') {
-        // Setelah pulang berhasil: Matikan kedua tombol
         const btnMasuk = document.getElementById('btnAbsenMasuk');
         const btnPulang = document.getElementById('btnAbsenPulang');
         const pesanEl = document.getElementById('absenPesan');
@@ -432,7 +415,6 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
           pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
         }
         
-        // Simpan status di localStorage
         localStorage.setItem('sbu_absen_status', JSON.stringify({
           last_action: 'pulang',
           timestamp: now.toISOString()
