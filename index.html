@@ -191,14 +191,19 @@
   <!-- SUB: REKAP ABSENSI (Mobile Standard) -->
 <div id="info-sub-rekap" class="hidden space-y-4">
   <div class="bg-white rounded-2xl p-4 shadow-sm">
-    <!-- Header -->
+    <!-- Header dengan Tombol Kembali -->
     <div class="flex items-center justify-between mb-4">
       <p class="font-bold text-base flex items-center gap-2">
         <i class="fa-solid fa-calendar-days text-blue-600"></i> Rekap Absensi
       </p>
-      <button onclick="loadRekapAbsensi()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
-        <i class="fa-solid fa-rotate-right"></i> Refresh
-      </button>
+      <div class="flex gap-2">
+        <button onclick="backToInfoMenu()" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+          <i class="fa-solid fa-arrow-left"></i> Kembali
+        </button>
+        <button onclick="loadRekapAbsensi()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+          <i class="fa-solid fa-rotate-right"></i> Refresh
+        </button>
+      </div>
     </div>
     
     <!-- Pilih Bulan -->
