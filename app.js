@@ -162,7 +162,6 @@ async function checkAbsenStatus() {
   const pesanEl = document.getElementById('absenPesan');
   
   try {
-    // CACHE BUSTER: Memaksa browser mengambil data terbaru dari server
     const url = `${CONFIG.GAS_URL}?action=getAbsenStatus&username=${encodeURIComponent(currentUser.username)}&t=${Date.now()}`;
     const res = await fetch(url);
     const result = await res.json();
@@ -177,14 +176,14 @@ async function checkAbsenStatus() {
         
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
-        btnMasuk.onclick = () => { console.log('Tombol Masuk diklik!'); openCamera('masuk'); };
+        btnMasuk.onclick = () => openCamera('masuk');
         
         btnPulang.disabled = true;
         btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnPulang.onclick = null;
         
         if (pesanEl) { pesanEl.innerText = 'Silakan absen masuk.'; pesanEl.className = 'text-sm font-bold mt-2 text-amber-600'; }
-        return; // Stop eksekusi di sini
+        return;
       }
 
       // Logika Normal jika ada data
@@ -200,7 +199,7 @@ async function checkAbsenStatus() {
       
       if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
-        btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
         btnPulang.onclick = () => openCamera('pulang');
       } else {
         btnPulang.disabled = true;
@@ -272,6 +271,26 @@ function compressImage(file, maxWidth = 800, quality = 0.7) {
   });
 }
 
+// ===== EVENT LISTENER INPUT ABSEN (LANGSUNG SELFIE) =====
+document.getElementById('cameraInputAbsen').addEventListener('change', async function(e) {
+  console.log('[cameraInputAbsen] File dipilih:', e.target.files[0]?.name);
+  if (e.target.files && e.target.files[0]) {
+    showLoading(true);
+    try {
+      capturedBase64 = await compressImage(e.target.files[0]);
+      console.log('[cameraInputAbsen] Foto dikompresi, action:', currentCameraAction);
+      await submitAbsenToGAS(currentCameraAction, capturedBase64);
+    } catch (err) {
+      console.error('[cameraInputAbsen] Error:', err);
+      alert('Terjadi kesalahan: ' + err.message);
+    } finally {
+      showLoading(false);
+      e.target.value = ''; // Reset input agar bisa foto lagi
+    }
+  }
+});
+
+// ===== EVENT LISTENER INPUT MODAL (PATROLI/KEJADIAN/IJIN) =====
 document.getElementById('cameraInput').addEventListener('change', async function(e) {
   if (e.target.files && e.target.files[0]) {
     showLoading(true);
@@ -284,11 +303,25 @@ document.getElementById('cameraInput').addEventListener('change', async function
   }
 });
 
+// ===== BUKA KAMERA =====
 function openCamera(action) {
-  console.log('[openCamera] Dipanggil dengan action:', action);
-  if (!action) { alert('Error: Action tidak valid!'); return; }
+  console.log('[openCamera] Action:', action);
+  currentCameraAction = action;
   
-  currentCameraAction = action; capturedBase64 = null;
+  // Untuk ABSEN MASUK/PULANG: Langsung buka kamera depan tanpa modal
+  if (action === 'masuk' || action === 'pulang') {
+    const inputAbsen = document.getElementById('cameraInputAbsen');
+    if (inputAbsen) {
+      inputAbsen.value = ''; // Reset
+      inputAbsen.click(); // Langsung buka kamera depan
+    } else {
+      alert('Error: Input kamera tidak ditemukan');
+    }
+    return;
+  }
+  
+  // Untuk PATROLI/KEJADIAN/IJIN: Pakai modal dengan kamera belakang
+  capturedBase64 = null;
   const modal = document.getElementById('cameraModal');
   const preview = document.getElementById('previewImage');
   const btnSend = document.getElementById('btnSendPhoto');
@@ -302,15 +335,22 @@ function openCamera(action) {
   hint.classList.remove('hidden');
   cameraInput.value = '';
   
-  const titles = { 'masuk': 'Selfie Absen Masuk', 'pulang': 'Selfie Absen Pulang', 'patroli1': 'Foto Patroli 1', 'patroli2': 'Foto Patroli 2', 'kejadian1': 'Bukti Kejadian 1', 'kejadian2': 'Bukti Kejadian 2', 'ijin': 'Bukti Surat/Undangan' };
+  const titles = { 
+    'patroli1': 'Foto Patroli 1', 
+    'patroli2': 'Foto Patroli 2', 
+    'kejadian1': 'Bukti Kejadian 1', 
+    'kejadian2': 'Bukti Kejadian 2', 
+    'ijin': 'Bukti Surat/Undangan' 
+  };
   if (title) title.innerText = titles[action] || 'Ambil Foto';
   
   if (timemark) {
     const now = new Date();
-    timemark.innerText = `📍 ${selectedLokasi ? selectedLokasi.nama_lokasi : '-'} | ⏰ ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
+    timemark.innerText = `📍 ${selectedLokasi ? selectedLokasi.nama_lokasi : '-'} |  ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
   }
   
-  modal.classList.remove('hidden'); modal.classList.add('flex');
+  modal.classList.remove('hidden'); 
+  modal.classList.add('flex');
 }
 
 function closeCamera() {
@@ -319,16 +359,11 @@ function closeCamera() {
 }
 
 async function sendPhoto() {
-  console.log('[sendPhoto] Dipanggil, action:', currentCameraAction);
+  console.log('[sendPhoto] Action:', currentCameraAction);
   if (!capturedBase64) { alert('Error: Tidak ada foto!'); return; }
   closeCamera();
   
-  if (currentCameraAction === 'masuk' || currentCameraAction === 'pulang') {
-    showLoading(true);
-    try { await submitAbsenToGAS(currentCameraAction, capturedBase64); } 
-    catch (e) { alert('Terjadi kesalahan: ' + e.message); } 
-    finally { showLoading(false); }
-  } else if (currentCameraAction === 'patroli1') { patroliData.foto1 = capturedBase64; updateBtn('btnPatroli1', '✅ Foto 1'); }
+  if (currentCameraAction === 'patroli1') { patroliData.foto1 = capturedBase64; updateBtn('btnPatroli1', '✅ Foto 1'); }
   else if (currentCameraAction === 'patroli2') { patroliData.foto2 = capturedBase64; updateBtn('btnPatroli2', '✅ Foto 2'); }
   else if (currentCameraAction === 'kejadian1') { kejadianData.foto1 = capturedBase64; updateBtn('btnKejadian1', '✅ Bukti 1'); }
   else if (currentCameraAction === 'kejadian2') { kejadianData.foto2 = capturedBase64; updateBtn('btnKejadian2', '✅ Bukti 2'); }
@@ -344,7 +379,7 @@ function resetBtn(id, text) {
   btn.innerText = text; btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== SUBMIT FUNCTIONS =====
+// ===== SUBMIT ABSEN (PERSISTEN) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const now = new Date();
@@ -361,13 +396,47 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
   try {
     const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
     const result = await response.json();
+    
     if (result.status === 'success') { 
       alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
-      await checkAbsenStatus(); // Refresh status tombol
-    } else { alert('❌ Gagal: ' + result.message); }
-  } catch (e) { alert('❌ Koneksi gagal: ' + e.message); }
+      
+      // LANGSUNG UPDATE UI TANPA PANGGIL checkAbsenStatus (Agar Persisten)
+      const btnMasuk = document.getElementById('btnAbsenMasuk');
+      const btnPulang = document.getElementById('btnAbsenPulang');
+      const pesanEl = document.getElementById('absenPesan');
+      
+      if (tipe === 'masuk') {
+        btnMasuk.disabled = true;
+        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnMasuk.onclick = null;
+        
+        btnPulang.disabled = false;
+        btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnPulang.onclick = () => openCamera('pulang');
+        
+        if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'masuk', timestamp: now.toISOString() }));
+        
+      } else if (tipe === 'pulang') {
+        btnMasuk.disabled = true;
+        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnMasuk.onclick = null;
+        
+        btnPulang.disabled = true;
+        btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnPulang.onclick = null;
+        
+        if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'pulang', timestamp: now.toISOString() }));
+      }
+      
+    } else { 
+      alert('❌ Gagal: ' + result.message); 
+    }
+  } catch (e) { alert(' Koneksi gagal: ' + e.message); }
 }
 
+// ===== SUBMIT LAINNYA =====
 async function submitPatroliFinal() {
   if (!patroliData.foto1 || !patroliData.foto2) return alert('Harap ambil kedua foto patroli!');
   const lokasi = document.getElementById('patroliLokasi').value.trim();
@@ -380,7 +449,7 @@ async function submitPatroliFinal() {
     alert('✅ ' + result.message);
     patroliData = { foto1: '', foto2: '' }; document.getElementById('patroliLokasi').value = ''; document.getElementById('patroliCatatan').value = '';
     resetBtn('btnPatroli1', '📷 Foto 1'); resetBtn('btnPatroli2', '📷 Foto 2');
-  } else { alert('❌ Gagal: ' + result.message); }
+  } else { alert(' Gagal: ' + result.message); }
   showLoading(false);
 }
 
@@ -458,7 +527,7 @@ async function loadPengajuanUser() {
         if (p.type === 'IJIN') {
           return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ${p.jenis}</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span></div><p class="text-[10px] text-slate-600">📅 ${p.tanggal_mulai} s/d ${p.tanggal_selesai}</p><p class="text-[10px] text-slate-500 mt-1">💬 ${p.keterangan || '-'}</p></div>`;
         } else {
-          return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span></div><p class="text-[10px] text-slate-600">📅 ${p.tanggal} | ${p.shift_lama} → ${p.shift_baru}</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ${p.pengganti}</p></div>`;
+          return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span></div><p class="text-[10px] text-slate-600">📅 ${p.tanggal} | ${p.shift_lama} → ${p.shift_baru}</p><p class="text-[10px] text-slate-500 mt-1"> Pengganti: ${p.pengganti}</p></div>`;
         }
       }).join('');
     }
@@ -608,25 +677,16 @@ function setTab(t, btnElement) {
   }
 }
 
-// ===== KEMBALI KE PILIH LOKASI =====
 function kembaliKePilihLokasi() {
   if (confirm('Yakin ingin mengganti lokasi kerja?\n\nAnda akan kembali ke halaman pilih lokasi.')) {
-    // Hapus data lokasi dari localStorage
     localStorage.removeItem('sbu_lokasi');
     selectedLokasi = null;
-    
-    // Sembunyikan screen utama
     document.getElementById('screen-main').classList.add('hidden');
     document.getElementById('screen-main').classList.remove('flex');
-    
-    // Tampilkan screen pilih lokasi
     const sl = document.getElementById('screen-lokasi');
     sl.classList.remove('hidden');
     sl.classList.add('flex');
-    
-    // Reload daftar lokasi
     loadLokasi();
-    
     console.log('[kembaliKePilihLokasi] User kembali ke halaman pilih lokasi');
   }
 }
