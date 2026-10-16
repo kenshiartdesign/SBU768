@@ -436,7 +436,10 @@
     </div>
   </div>
 
-  <!-- Modal Kamera -->
+<!-- Input Tersembunyi untuk Absen Langsung Selfie -->
+<input type="file" id="cameraInputAbsen" accept="image/*" capture="user" class="hidden">
+
+<!-- Modal Kamera (Hanya untuk Patroli/Kejadian/Ijin) -->
 <div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col">
   <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
     <p id="cameraTitle" class="mb-2 text-base font-bold text-amber-400">Selfie Absensi</p>
