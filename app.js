@@ -185,16 +185,20 @@ async function checkAbsenStatus() {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getAbsenStatus&username=${currentUser.username}`);
     const result = await res.json();
     
+    console.log('[checkAbsenStatus] Result dari server:', result);
+    
     if (result.status === 'success') {
       // Update tombol MASUK
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
         btnMasuk.onclick = () => openCamera('masuk');
+        console.log('[checkAbsenStatus] Tombol MASUK diaktifkan (HITAM)');
       } else {
         btnMasuk.disabled = true;
         btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnMasuk.onclick = null;
+        console.log('[checkAbsenStatus] Tombol MASUK dinonaktifkan (ABU)');
       }
       
       // Update tombol PULANG
@@ -202,16 +206,24 @@ async function checkAbsenStatus() {
         btnPulang.disabled = false;
         btnPulang.className = 'h-24 bg-green-600 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
         btnPulang.onclick = () => openCamera('pulang');
+        console.log('[checkAbsenStatus] Tombol PULANG diaktifkan (HIJAU)');
       } else {
         btnPulang.disabled = true;
         btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnPulang.onclick = null;
+        console.log('[checkAbsenStatus] Tombol PULANG dinonaktifkan (ABU)');
       }
       
       // Update pesan
       if (pesanEl) {
         pesanEl.innerText = result.pesan || '';
-        pesanEl.className = 'text-sm font-bold mt-2 ' + (result.pesan && result.pesan.toLowerCase().includes('terkunci') ? 'text-red-600' : 'text-amber-600');
+        if (result.pesan && result.pesan.includes('sudah absen masuk')) {
+          pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
+        } else if (result.pesan && result.pesan.toLowerCase().includes('terkunci')) {
+          pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
+        } else {
+          pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
+        }
       }
       
       // Update localStorage dengan data dari server
@@ -220,19 +232,23 @@ async function checkAbsenStatus() {
           last_action: 'masuk',
           timestamp: new Date(result.last_masuk).toISOString()
         }));
+        console.log('[checkAbsenStatus] Saved to localStorage: last_action=masuk');
       } else if (result.last_pulang) {
         localStorage.setItem('sbu_absen_status', JSON.stringify({
           last_action: 'pulang',
           timestamp: new Date(result.last_pulang).toISOString()
         }));
+        console.log('[checkAbsenStatus] Saved to localStorage: last_action=pulang');
       } else {
         localStorage.removeItem('sbu_absen_status');
+        console.log('[checkAbsenStatus] Removed localStorage (belum absen)');
       }
     }
   } catch (e) { 
-    console.error('Gagal cek status absen:', e);
+    console.error('[checkAbsenStatus] Gagal cek status absen:', e);
     // Fallback ke localStorage jika API gagal
     if (savedStatus) {
+      console.log('[checkAbsenStatus] Using localStorage fallback:', savedStatus);
       if (savedStatus.last_action === 'masuk') {
         btnMasuk.disabled = true;
         btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
@@ -847,6 +863,7 @@ function getHariKerjaBulan(tahun, bulan) {
   return count;
 }
 
+// ===== NAVIGASI TAB (DENGAN REFRESH YANG TEPAT) =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('tab-' + t).classList.remove('hidden');
@@ -859,7 +876,13 @@ function setTab(t, btnElement) {
   }
   
   // Refresh data saat buka tab tertentu
-  if (t === 'absen') checkAbsenStatus(); // PENTING: Refresh status tombol absen
+  if (t === 'absen') {
+    console.log('[setTab] Tab Absen dibuka - refreshing status...');
+    // Beri delay sedikit agar DOM ready
+    setTimeout(() => {
+      checkAbsenStatus();
+    }, 100);
+  }
   if (t === 'info') {
     backToInfoMenu();
   }
