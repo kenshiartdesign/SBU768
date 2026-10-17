@@ -327,13 +327,66 @@ async function captureSelfie() {
   capturedBase64 = canvas.toDataURL('image/jpeg', 0.7);
   closeCameraAbsen();
   
+  // ===== OPTIMISTIC UI UPDATE: UBAH TOMBOL LANGSUNG SEBELUM KIRIM KE SERVER =====
+  const btnMasuk = document.getElementById('btnAbsenMasuk');
+  const btnPulang = document.getElementById('btnAbsenPulang');
+  const pesanEl = document.getElementById('absenPesan');
+  
+  if (currentCameraAction === 'masuk') {
+    btnMasuk.disabled = true;
+    btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+    btnMasuk.onclick = null;
+    
+    btnPulang.disabled = false;
+    btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+    btnPulang.onclick = () => openCamera('pulang');
+    
+    if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
+  } else if (currentCameraAction === 'pulang') {
+    btnMasuk.disabled = true;
+    btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+    btnMasuk.onclick = null;
+    
+    btnPulang.disabled = true;
+    btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+    btnPulang.onclick = null;
+    
+    if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
+  }
+  
+  // Simpan status untuk fallback
+  localStorage.setItem('sbu_absen_status', JSON.stringify({ 
+    last_action: currentCameraAction, 
+    timestamp: now.toISOString() 
+  }));
+  
+  // ===== KIRIM KE SERVER DI BACKGROUND =====
   showLoading(true);
   try {
-    await submitAbsenToGAS(currentCameraAction, capturedBase64);
-  } catch (err) {
-    alert('Terjadi kesalahan: ' + err.message);
+    const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
+    const payload = {
+      action: currentCameraAction === 'masuk' ? 'absenMasuk' : 'absenPulang',
+      username: currentUser.username, nama: currentUser.nama,
+      id_lokasi: selectedLokasi.id_lokasi, nama_lokasi: selectedLokasi.nama_lokasi,
+      jenis: currentCameraAction.toUpperCase(), latitude: gps.lat, longitude: gps.lng,
+      accuracy: Math.round(gps.accuracy), is_mock: 'NO',
+      timemark: `${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')} | ${selectedLokasi.nama_lokasi}`,
+      foto_base64: capturedBase64
+    };
+    
+    const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      alert(`✅ Absen ${currentCameraAction.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`);
+    } else {
+      alert('❌ Gagal: ' + result.message);
+    }
+  } catch (e) {
+    alert('❌ Koneksi gagal: ' + e.message);
   } finally {
     showLoading(false);
+    // PENTING: JANGAN panggil checkAbsenStatus() di sini agar tidak menimpa UI update yang sudah benar
   }
 }
 
@@ -441,9 +494,9 @@ function resetBtn(id, text) {
   btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== SUBMIT ABSEN =====
+// ===== SUBMIT ABSEN (Fallback Saja) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
-  const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
+  // Fungsi ini hanya sebagai fallback. Logika utama sudah dihandle di captureSelfie
   const now = new Date();
   const payload = {
     action: tipe === 'masuk' ? 'absenMasuk' : 'absenPulang',
@@ -458,47 +511,12 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
   try {
     const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
     const result = await response.json();
-    
-    if (result.status === 'success') {
-      alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`);
-      
-      // Simpan status untuk fallback
-      localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: tipe, timestamp: now.toISOString() }));
-      
-      // Update UI langsung
-      const btnMasuk = document.getElementById('btnAbsenMasuk');
-      const btnPulang = document.getElementById('btnAbsenPulang');
-      const pesanEl = document.getElementById('absenPesan');
-      
-      if (tipe === 'masuk') {
-        btnMasuk.disabled = true;
-        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
-        btnMasuk.onclick = null;
-        
-        btnPulang.disabled = false;
-        btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
-        btnPulang.onclick = () => openCamera('pulang');
-        
-        if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
-      } else if (tipe === 'pulang') {
-        btnMasuk.disabled = true;
-        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
-        btnMasuk.onclick = null;
-        
-        btnPulang.disabled = true;
-        btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
-        btnPulang.onclick = null;
-        
-        if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
-      }
-      
-      // Refresh status dari server setelah 1 detik (sinkronisasi)
-      setTimeout(() => checkAbsenStatus(), 1000);
-      
-    } else {
+    if (result.status !== 'success') {
       alert('❌ Gagal: ' + result.message);
     }
-  } catch (e) { alert('❌ Koneksi gagal: ' + e.message); }
+  } catch (e) {
+    alert('❌ Koneksi gagal: ' + e.message);
+  }
 }
 
 // ===== SUBMIT PATROLI =====
