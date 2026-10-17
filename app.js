@@ -1,6 +1,7 @@
 const CONFIG = {
+  // PENTING: Ganti URL ini dengan URL Deployment Web App GAS Anda yang TERBARU
   GAS_URL: 'https://script.google.com/macros/s/AKfycbw-58nnkja5GjCIlKhgujoOaOHwl6q5Db9vO8EbAL3U_taootpJe0RJIjLA0bzFiDdRYQ/exec',
-  MAX_ACCURACY: 60
+  MAX_ACCURACY: 100
 };
 
 let currentUser = JSON.parse(localStorage.getItem('sbu_user') || 'null');
@@ -13,6 +14,7 @@ let kejadianData = { foto1: '', foto2: '' };
 let ijinData = { foto: '' };
 let videoStream = null;
 
+// ===== LOADING =====
 function showLoading(show) {
   let overlay = document.getElementById('loadingOverlay');
   if (show) {
@@ -28,6 +30,7 @@ function showLoading(show) {
   }
 }
 
+// ===== GPS =====
 function startGPS() {
   if (!navigator.geolocation) return;
   navigator.geolocation.watchPosition(p => {
@@ -57,6 +60,7 @@ function updateAbsenUI() {
   }
 }
 
+// ===== JAM & TANGGAL =====
 function updateJamDigital() {
   const now = new Date();
   const jam = String(now.getHours()).padStart(2, '0');
@@ -91,6 +95,7 @@ function startClock() {
   }, 1000);
 }
 
+// ===== LOGIN & LOKASI =====
 async function doLogin() {
   const u = document.getElementById('inpUser').value.trim();
   const p = document.getElementById('inpPass').value.trim();
@@ -154,10 +159,12 @@ async function showMainScreen() {
   const sm = document.getElementById('screen-main');
   sm.classList.remove('hidden');
   sm.classList.add('flex');
+  
   document.getElementById('namaTop').innerText = currentUser.nama;
   document.getElementById('avatarTop').innerText = currentUser.avatar;
   document.getElementById('lokasiTop').innerText = selectedLokasi.nama_lokasi;
   document.getElementById('infoLokasiAbsen').innerText = selectedLokasi.nama_lokasi;
+  
   document.getElementById('namaProfil').innerText = currentUser.nama;
   document.getElementById('avatarProfil').innerText = currentUser.avatar;
   document.getElementById('roleProfil').innerText = currentUser.role.toUpperCase();
@@ -166,22 +173,30 @@ async function showMainScreen() {
   document.getElementById('profilTlp').innerText = currentUser.no_tlp || '-';
   document.getElementById('profilEmail').innerText = currentUser.email || '-';
   document.getElementById('profilNik').innerText = currentUser.nik || '-';
+  
   updateAbsenUI();
   await checkAbsenStatus();
+  
+  // Load data lain di background (non-blocking)
   loadSlipGaji();
   loadPengajuanUser();
 }
 
+// ===== CEK STATUS ABSEN (DENGAN CACHE BUSTER & FALLBACK) =====
 async function checkAbsenStatus() {
   if (!currentUser) return;
   const btnMasuk = document.getElementById('btnAbsenMasuk');
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
+  
   try {
+    // Cache buster: &t=Date.now() memaksa browser mengambil data TERBARU dari server
     const url = CONFIG.GAS_URL + '?action=getAbsenStatus&username=' + encodeURIComponent(currentUser.username) + '&t=' + Date.now();
     const res = await fetch(url);
     const result = await res.json();
+    
     console.log('SERVER RESPONSE:', result);
+    
     if (result.status === 'success') {
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
@@ -192,6 +207,7 @@ async function checkAbsenStatus() {
         btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnMasuk.onclick = null;
       }
+      
       if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
         btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -201,18 +217,47 @@ async function checkAbsenStatus() {
         btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnPulang.onclick = null;
       }
+      
       if (pesanEl) {
         pesanEl.innerText = result.pesan || '';
         if (result.pesan.includes('sudah absen masuk')) pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
         else if (result.pesan.toLowerCase().includes('terkunci')) pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
         else pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
       }
+      
+      // Simpan status valid dari server ke localStorage
+      if (result.debug_last_masuk && !result.debug_last_pulang) {
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'masuk', timestamp: new Date(result.debug_last_masuk).toISOString() }));
+      } else if (result.debug_last_pulang) {
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'pulang', timestamp: new Date(result.debug_last_pulang).toISOString() }));
+      } else {
+        localStorage.removeItem('sbu_absen_status');
+      }
     }
   } catch (e) {
     console.error('Check status error:', e);
+    // Fallback ke localStorage jika server error/timeout
+    const savedStatus = JSON.parse(localStorage.getItem('sbu_absen_status') || 'null');
+    if (savedStatus) {
+      if (savedStatus.last_action === 'masuk') {
+        btnMasuk.disabled = true;
+        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnPulang.disabled = false;
+        btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+        btnPulang.onclick = () => openCamera('pulang');
+        if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
+      } else if (savedStatus.last_action === 'pulang') {
+        btnMasuk.disabled = true;
+        btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        btnPulang.disabled = true;
+        btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+        if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
+      }
+    }
   }
 }
 
+// ===== KAMERA DEPAN (SELFIE) =====
 async function openCameraAbsen(action) {
   currentCameraAction = action;
   const modal = document.getElementById('cameraModalAbsen');
@@ -227,7 +272,7 @@ async function openCameraAbsen(action) {
     modal.classList.add('flex');
   } catch (err) {
     console.error('openCameraAbsen Error:', err);
-    alert('Gagal mengakses kamera depan: ' + err.message);
+    alert('Gagal mengakses kamera depan: ' + err.message + '\nPastikan izin kamera diberikan.');
   }
 }
 
@@ -249,49 +294,59 @@ async function captureSelfie() {
   const ctx = canvas.getContext('2d');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
+  
+  // Flip horizontal untuk kamera depan
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  // ===== WATERMARK LENGKAP =====
   const now = new Date();
   const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const tanggal = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const statusText = currentCameraAction === 'masuk' ? 'ABSEN MASUK' : 'ABSEN PULANG';
   const lokasiText = selectedLokasi ? selectedLokasi.nama_lokasi : 'Unknown';
   const namaUser = currentUser ? currentUser.nama : 'Unknown';
+  
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   const watermarkHeight = 130;
   ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
   ctx.fillRect(0, canvas.height - watermarkHeight, canvas.width, watermarkHeight);
-  ctx.fillStyle = '#fbbf24';
-  ctx.font = 'bold 26px Arial';
-  ctx.textAlign = 'center';
+  
+  ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 26px Arial'; ctx.textAlign = 'center';
   ctx.fillText(statusText, canvas.width / 2, canvas.height - watermarkHeight + 35);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px Arial';
+  
+  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial';
   ctx.fillText(namaUser, canvas.width / 2, canvas.height - watermarkHeight + 65);
-  ctx.fillStyle = '#e5e7eb';
-  ctx.font = '15px Arial';
+  
+  ctx.fillStyle = '#e5e7eb'; ctx.font = '15px Arial';
   ctx.fillText(tanggal, canvas.width / 2, canvas.height - watermarkHeight + 90);
-  ctx.fillStyle = '#10b981';
-  ctx.font = 'bold 16px Arial';
+  
+  ctx.fillStyle = '#10b981'; ctx.font = 'bold 16px Arial';
   ctx.fillText('⏰ ' + jam, canvas.width / 2, canvas.height - watermarkHeight + 115);
+  
   if (gps) {
-    ctx.fillStyle = '#9ca3af';
-    ctx.font = '13px monospace';
+    ctx.fillStyle = '#9ca3af'; ctx.font = '13px monospace';
     ctx.fillText('📍 ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), canvas.width / 2, canvas.height - watermarkHeight + 140);
   }
+  
   capturedBase64 = canvas.toDataURL('image/jpeg', 0.7);
   closeCameraAbsen();
+  
+  // ===== OPTIMISTIC UI UPDATE (Ubah tombol LANGSUNG sebelum kirim ke server) =====
   const btnMasuk = document.getElementById('btnAbsenMasuk');
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
+  
   if (currentCameraAction === 'masuk') {
     btnMasuk.disabled = true;
     btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
     btnMasuk.onclick = null;
+    
     btnPulang.disabled = false;
     btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
     btnPulang.onclick = () => openCamera('pulang');
+    
     if (pesanEl) {
       pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.';
       pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
@@ -300,15 +355,23 @@ async function captureSelfie() {
     btnMasuk.disabled = true;
     btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
     btnMasuk.onclick = null;
+    
     btnPulang.disabled = true;
     btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
     btnPulang.onclick = null;
+    
     if (pesanEl) {
       pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.';
       pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
     }
   }
-  localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: currentCameraAction, timestamp: now.toISOString() }));
+  
+  // Simpan status di localStorage sebagai backup
+  localStorage.setItem('sbu_absen_status', JSON.stringify({
+    last_action: currentCameraAction,
+    timestamp: now.toISOString()
+  }));
+
   showLoading(true);
   try {
     const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
@@ -326,25 +389,26 @@ async function captureSelfie() {
       timemark: now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID') + ' | ' + selectedLokasi.nama_lokasi,
       foto_base64: capturedBase64
     };
-    console.log('Mengirim data absen:', payload);
+    
     const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
     const result = await response.json();
-    console.log('Response server:', result);
+    
     if (result.status === 'success') {
       alert('✅ Absen ' + currentCameraAction.toUpperCase() + ' berhasil!\nJarak: ' + result.jarak + 'm');
     } else {
       alert('❌ Gagal: ' + result.message);
-      checkAbsenStatus();
+      checkAbsenStatus(); // Rollback UI jika gagal
     }
   } catch (e) {
     console.error('Error kirim absen:', e);
     alert('❌ Koneksi gagal: ' + e.message);
-    checkAbsenStatus();
+    checkAbsenStatus(); // Rollback UI jika gagal
   } finally {
     showLoading(false);
   }
 }
 
+// ===== KAMERA MODAL (PATROLI/KEJADIAN/IJIN) =====
 function compressImage(file, maxWidth, quality) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -397,10 +461,12 @@ function openCamera(action) {
   const cameraInput = document.getElementById('cameraInput');
   const title = document.getElementById('cameraTitle');
   const timemark = document.getElementById('cameraTimemark');
+  
   preview.classList.add('hidden');
   btnSend.classList.add('hidden');
   hint.classList.remove('hidden');
   cameraInput.value = '';
+  
   const titles = {
     'patroli1': 'Foto Patroli 1',
     'patroli2': 'Foto Patroli 2',
@@ -458,33 +524,7 @@ function resetBtn(id, text) {
   btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-async function submitAbsenToGAS(tipe, fotoBase64) {
-  const now = new Date();
-  const payload = {
-    action: tipe === 'masuk' ? 'absenMasuk' : 'absenPulang',
-    username: currentUser.username,
-    nama: currentUser.nama,
-    id_lokasi: selectedLokasi.id_lokasi,
-    nama_lokasi: selectedLokasi.nama_lokasi,
-    jenis: tipe.toUpperCase(),
-    latitude: gps.lat,
-    longitude: gps.lng,
-    accuracy: Math.round(gps.accuracy),
-    is_mock: 'NO',
-    timemark: now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID') + ' | ' + selectedLokasi.nama_lokasi,
-    foto_base64: fotoBase64
-  };
-  try {
-    const response = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-    const result = await response.json();
-    if (result.status !== 'success') {
-      alert(' Gagal: ' + result.message);
-    }
-  } catch (e) {
-    alert('❌ Koneksi gagal: ' + e.message);
-  }
-}
-
+// ===== SUBMIT LAINNYA =====
 async function submitPatroliFinal() {
   if (!patroliData.foto1 || !patroliData.foto2) return alert('Harap ambil kedua foto patroli!');
   const lokasi = document.getElementById('patroliLokasi').value.trim();
@@ -512,7 +552,7 @@ async function submitPatroliFinal() {
     document.getElementById('patroliLokasi').value = '';
     document.getElementById('patroliCatatan').value = '';
     resetBtn('btnPatroli1', '📷 Foto 1');
-    resetBtn('btnPatroli2', ' Foto 2');
+    resetBtn('btnPatroli2', '📷 Foto 2');
   } else {
     alert('❌ Gagal: ' + result.message);
   }
@@ -547,7 +587,7 @@ async function submitKejadianFinal() {
     document.getElementById('kejadianLokasi').value = '';
     document.getElementById('kejadianKronologi').value = '';
     resetBtn('btnKejadian1', '📷 Bukti 1');
-    resetBtn('btnKejadian2', ' Bukti 2');
+    resetBtn('btnKejadian2', '📷 Bukti 2');
   } else {
     alert('❌ Gagal: ' + result.message);
   }
@@ -576,7 +616,7 @@ async function submitIjinFinal() {
     alert('✅ ' + result.message);
     ijinData = { foto: '' };
     document.getElementById('ijinKet').value = '';
-    resetBtn('btnIjin', ' Upload Bukti (Surat Dokter/Undangan)');
+    resetBtn('btnIjin', '📷 Upload Bukti (Surat Dokter/Undangan)');
     loadPengajuanUser();
   } else {
     alert('❌ Gagal: ' + result.message);
@@ -620,6 +660,7 @@ async function submitShiftFinal() {
   showLoading(false);
 }
 
+// ===== INFO & REKAP =====
 async function loadPengajuanUser() {
   if (!currentUser) return;
   try {
@@ -641,7 +682,7 @@ async function loadPengajuanUser() {
         if (p.type === 'IJIN') {
           return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
         } else {
-          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600"> ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
+          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
         }
       }).join('');
     }
@@ -808,6 +849,7 @@ function getHariKerjaBulan(tahun, bulan) {
   return count;
 }
 
+// ===== NAVIGASI & INIT =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('tab-' + t).classList.remove('hidden');
@@ -815,6 +857,7 @@ function setTab(t, btnElement) {
     btn.className = btn.className.replace('bg-slate-900 text-white', 'bg-slate-100 text-slate-700');
   });
   if (btnElement) btnElement.className = btnElement.className.replace('bg-slate-100 text-slate-700', 'bg-slate-900 text-white');
+  
   if (t === 'absen') setTimeout(() => checkAbsenStatus(), 100);
   if (t === 'info') backToInfoMenu();
   if (t === 'profil') {
