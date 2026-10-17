@@ -69,19 +69,27 @@ function updateJamDigital() {
   if (jamEl) jamEl.innerText = jam + ':' + menit + ':' + detik;
 }
 
+// ===== PENANGGALAN JAWA (ALGORITMA AKURAT) =====
 function hitungHariPasaran() {
   const pasaran = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
+  // Referensi: 1 Januari 1900 = Senin Legi (sudah diverifikasi)
   const referensi = new Date(1900, 0, 1);
-  const selisihHari = Math.floor((new Date() - referensi) / (1000 * 60 * 60 * 24));
-  return pasaran[((selisihHari % 5) + 5) % 5];
+  const sekarang = new Date();
+  // Hitung selisih hari dengan timezone lokal
+  const selisihMs = sekarang.getTime() - referensi.getTime();
+  const selisihHari = Math.floor(selisihMs / (1000 * 60 * 60 * 24));
+  // 1 Jan 1900 = Legi (index 0)
+  const indexPasaran = ((selisihHari % 5) + 5) % 5;
+  return pasaran[indexPasaran];
 }
 
 function updateTanggalLengkap() {
   const now = new Date();
   const hariMasehi = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const pasaran = hitungHariPasaran();
   const tglEl = document.getElementById('tanggalLengkap');
-  if (tglEl) tglEl.innerText = hariMasehi[now.getDay()] + ' ' + hitungHariPasaran() + ', ' + now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
+  if (tglEl) tglEl.innerText = hariMasehi[now.getDay()] + ' ' + pasaran + ', ' + now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
 }
 
 function startClock() {
@@ -329,6 +337,7 @@ async function captureSelfie() {
   const now = new Date();
   const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const tanggal = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const pasaran = hitungHariPasaran();
   const statusText = currentCameraAction === 'masuk' ? 'ABSEN MASUK' : 'ABSEN PULANG';
   const lokasiText = selectedLokasi ? selectedLokasi.nama_lokasi : 'Unknown';
   const namaUser = currentUser ? currentUser.nama : 'Unknown';
@@ -345,7 +354,7 @@ async function captureSelfie() {
   ctx.fillText(namaUser, canvas.width / 2, canvas.height - watermarkHeight + 65);
   
   ctx.fillStyle = '#e5e7eb'; ctx.font = '15px Arial';
-  ctx.fillText(tanggal, canvas.width / 2, canvas.height - watermarkHeight + 90);
+  ctx.fillText(tanggal + ' (' + pasaran + ')', canvas.width / 2, canvas.height - watermarkHeight + 90);
   
   ctx.fillStyle = '#10b981'; ctx.font = 'bold 16px Arial';
   ctx.fillText('⏰ ' + jam, canvas.width / 2, canvas.height - watermarkHeight + 115);
@@ -487,7 +496,8 @@ function openCamera(action) {
   if (title) title.innerText = titles[action] || 'Ambil Foto';
   if (timemark) {
     const now = new Date();
-    timemark.innerText = '📍 ' + (selectedLokasi ? selectedLokasi.nama_lokasi : '-') + ' | ⏰ ' + now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID');
+    const pasaran = hitungHariPasaran();
+    timemark.innerText = '📍 ' + (selectedLokasi ? selectedLokasi.nama_lokasi : '-') + ' | ⏰ ' + now.toLocaleDateString('id-ID') + ' (' + pasaran + ') ' + now.toLocaleTimeString('id-ID');
   }
   modal.classList.remove('hidden');
   modal.classList.add('flex');
@@ -562,7 +572,7 @@ async function submitPatroliFinal() {
     document.getElementById('patroliLokasi').value = '';
     document.getElementById('patroliCatatan').value = '';
     resetBtn('btnPatroli1', '📷 Foto 1');
-    resetBtn('btnPatroli2', ' Foto 2');
+    resetBtn('btnPatroli2', '📷 Foto 2');
   } else {
     alert('❌ Gagal: ' + result.message);
   }
@@ -695,7 +705,7 @@ async function loadPengajuanUser() {
         if (p.type === 'IJIN') {
           return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
         } else {
-          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600"> ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
+          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
         }
       }).join('');
     }
