@@ -109,9 +109,12 @@ async function doLogin() {
       err.textContent = result.message;
       err.classList.remove('hidden');
     }
-  } catch (e) { alert('Koneksi gagal: ' + e.message); }
-  finally { showLoading(false); }
-}
+  } catch (e) { 
+    alert('Koneksi gagal: ' + e.message); 
+  } finally { 
+    showLoading(false); 
+  }
+}  // ← Pastikan kurung kurawal ini ada!
 
 async function loadLokasi() {
   showLoading(true);
