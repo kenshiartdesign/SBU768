@@ -439,19 +439,36 @@
 <!-- Input Tersembunyi untuk Absen Langsung Selfie -->
 <input type="file" id="cameraInputAbsen" accept="image/*" capture="user" class="hidden">
 
+<!-- Video Element untuk Kamera Depan (Fallback) -->
+<video id="videoAbsen" autoplay playsinline class="hidden"></video>
+<canvas id="canvasAbsen" class="hidden"></canvas>
+
 <!-- Modal Kamera (Hanya untuk Patroli/Kejadian/Ijin) -->
 <div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col">
   <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
-    <p id="cameraTitle" class="mb-2 text-base font-bold text-amber-400">Selfie Absensi</p>
+    <p id="cameraTitle" class="mb-2 text-base font-bold text-amber-400">Ambil Foto</p>
     <p id="cameraTimemark" class="mb-4 text-xs text-white/80 mono text-center"></p>
-    <input type="file" id="cameraInput" accept="image/*" capture="user" class="hidden">
-    <button onclick="document.getElementById('cameraInput').click()" class="bg-amber-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-base mb-4 shadow-lg active:scale-95 transition">📸 Buka Kamera Depan</button>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+    <button onclick="document.getElementById('cameraInput').click()" class="bg-amber-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-base mb-4 shadow-lg active:scale-95 transition">📸 Buka Kamera</button>
     <img id="previewImage" class="max-w-full max-h-[50vh] rounded-xl hidden border-2 border-amber-400 shadow-lg">
-    <p id="cameraHint" class="text-xs text-white/50 mt-2">Klik tombol di atas untuk selfie</p>
+    <p id="cameraHint" class="text-xs text-white/50 mt-2">Klik tombol di atas untuk membuka kamera</p>
   </div>
   <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
     <button onclick="closeCamera()" class="text-white/70 font-bold">BATAL</button>
     <button id="btnSendPhoto" onclick="sendPhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold hidden shadow-lg active:scale-95 transition">✅ KIRIM</button>
+  </div>
+</div>
+
+<!-- Modal Kamera Depan untuk Absen -->
+<div id="cameraModalAbsen" class="fixed inset-0 z-[100] bg-black hidden flex-col">
+  <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
+    <p class="mb-2 text-base font-bold text-amber-400">Selfie Absensi</p>
+    <video id="videoLive" autoplay playsinline class="w-full max-h-[60vh] rounded-xl border-2 border-amber-400"></video>
+    <p class="text-xs text-white/50 mt-2">Posisikan wajah Anda di tengah</p>
+  </div>
+  <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
+    <button onclick="closeCameraAbsen()" class="text-white/70 font-bold">BATAL</button>
+    <button onclick="captureSelfie()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg active:scale-95 transition">📸 AMBIL FOTO</button>
   </div>
 </div>
 
