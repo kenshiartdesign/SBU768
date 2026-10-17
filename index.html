@@ -25,105 +25,93 @@
   </div>
 
   <!-- Screen Pilih Lokasi -->
-<div id="screen-lokasi" class="fixed inset-0 z-40 bg-gradient-to-br from-slate-50 to-blue-50 text-slate-900 hidden flex-col">
-  <!-- Header dengan Jam & Tanggal -->
-  <div class="bg-[#0f172a] text-white p-6 pb-8 rounded-b-[32px] shadow-lg">
-    <div class="flex items-center justify-between mb-4">
+  <div id="screen-lokasi" class="fixed inset-0 z-40 bg-gradient-to-br from-slate-50 to-blue-50 text-slate-900 hidden flex-col">
+    <div class="bg-[#0f172a] text-white p-6 pb-8 rounded-b-[32px] shadow-lg">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center"><i class="fa-solid fa-shield-halved text-slate-900"></i></div>
+          <div>
+            <p class="font-extrabold text-sm">PT SENTRA BHAKTI UTAMA</p>
+            <p class="text-[10px] text-amber-400 font-medium tracking-wide">Profesional, Terpercaya, Berkwalitas</p>
+          </div>
+        </div>
+        <button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button>
+      </div>
+      <div class="text-center">
+        <p id="jamDigital" class="text-5xl font-extrabold font-mono tracking-wider">00:00:00</p>
+        <p id="tanggalLengkap" class="text-sm text-white/80 mt-3 font-medium">Memuat tanggal...</p>
+      </div>
+    </div>
+    <div class="px-6 pt-6">
+      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <i class="fa-solid fa-location-dot text-blue-600"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi GPS Anda</p>
+            <p id="gpsInfo" class="text-xs mono text-slate-700 mt-0.5">Mencari GPS...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto px-6 pt-4 pb-6">
+      <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Pilih Lokasi Kerja</p>
+      <div id="listLokasi" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- Screen Utama -->
+  <div id="screen-main" class="fixed inset-0 z-30 bg-[#f8fafc] text-slate-900 hidden flex-col">
+    <div class="h-[64px] bg-[#0f172a] flex items-center justify-between px-4 shadow-md">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center"><i class="fa-solid fa-shield-halved text-slate-900"></i></div>
+        <button onclick="kembaliKePilihLokasi()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center active:scale-95 transition" title="Ganti Lokasi">
+          <i class="fa-solid fa-arrow-left text-[12px]"></i>
+        </button>
+        <div id="avatarTop" class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-bold text-slate-900">-</div>
         <div>
-          <p class="font-extrabold text-sm">PT SENTRA BHAKTI UTAMA</p>
-          <p class="text-[10px] text-amber-400 font-medium tracking-wide">Profesional, Terpercaya, Berkwalitas</p>
+          <p id="namaTop" class="text-white font-bold text-[13px]">-</p>
+          <p id="lokasiTop" class="text-white/60 text-[10px]">-</p>
         </div>
       </div>
       <button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button>
     </div>
     
-    <!-- Jam Digital -->
-    <div class="text-center">
-      <p id="jamDigital" class="text-5xl font-extrabold font-mono tracking-wider">00:00:00</p>
-      <p id="tanggalLengkap" class="text-sm text-white/80 mt-3 font-medium">Memuat tanggal...</p>
-    </div>
-  </div>
-  
-  <!-- Info GPS -->
-  <div class="px-6 pt-6">
-    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-          <i class="fa-solid fa-location-dot text-blue-600"></i>
-        </div>
-        <div class="flex-1">
-          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lokasi GPS Anda</p>
-          <p id="gpsInfo" class="text-xs mono text-slate-700 mt-0.5">Mencari GPS...</p>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Daftar Lokasi -->
-  <div class="flex-1 overflow-y-auto px-6 pt-4 pb-6">
-    <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Pilih Lokasi Kerja</p>
-    <div id="listLokasi" class="space-y-3"></div>
-  </div>
-</div>
-  
-  <!-- Screen Utama -->
-<div id="screen-main" class="fixed inset-0 z-30 bg-[#f8fafc] text-slate-900 hidden flex-col">
-  <div class="h-[64px] bg-[#0f172a] flex items-center justify-between px-4 shadow-md">
-    <div class="flex items-center gap-3">
-      <!-- Tombol Kembali ke Pilih Lokasi -->
-      <button onclick="kembaliKePilihLokasi()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center active:scale-95 transition" title="Ganti Lokasi">
-        <i class="fa-solid fa-arrow-left text-[12px]"></i>
-      </button>
-      
-      <div id="avatarTop" class="w-9 h-9 rounded-xl bg-amber-400 flex items-center justify-center font-bold text-slate-900">-</div>
-      <div>
-        <p id="namaTop" class="text-white font-bold text-[13px]">-</p>
-        <p id="lokasiTop" class="text-white/60 text-[10px]">-</p>
-      </div>
-    </div>
-    <button onclick="doLogout()" class="w-8 h-8 rounded-full bg-white/10 text-white/70 flex items-center justify-center"><i class="fa-solid fa-right-from-bracket text-[12px]"></i></button>
-  </div>
-    
     <div class="flex-1 overflow-y-auto p-4 pb-[90px]">
       
-      <!-- TAB ABSEN (Mobile Standard) -->
-<div id="tab-absen" class="space-y-4">
-  <!-- Card Status GPS -->
-  <div class="bg-white rounded-2xl p-4 shadow-sm">
-    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status GPS & Absen</p>
-    <div class="flex items-center justify-between mb-2">
-      <p class="text-base font-bold text-slate-700">
-        Jarak: <span id="absenJarak" class="text-green-600">Menunggu GPS...</span>
-      </p>
-    </div>
-    <p id="absenPesan" class="text-sm font-bold text-amber-600 mt-2"></p>
-  </div>
-  
-  <!-- Tombol Absen -->
-  <div class="grid grid-cols-2 gap-3">
-    <button id="btnAbsenMasuk" onclick="openCamera('masuk')" class="h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2">
-      <i class="fa-solid fa-right-to-bracket text-2xl"></i>
-      <span class="text-base font-bold">ABSEN MASUK</span>
-    </button>
-    <button id="btnAbsenPulang" onclick="openCamera('pulang')" class="h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold shadow-sm flex flex-col items-center justify-center gap-2 cursor-not-allowed" disabled>
-      <i class="fa-solid fa-right-from-bracket text-2xl"></i>
-      <span class="text-base font-bold">ABSEN PULANG</span>
-    </button>
-  </div>
-  
-  <!-- Info Lokasi -->
-  <div class="bg-blue-50 border border-blue-200 rounded-2xl p-3">
-    <div class="flex items-center gap-2">
-      <i class="fa-solid fa-location-dot text-blue-600"></i>
-      <div>
-        <p class="text-xs font-bold text-blue-800">Lokasi Aktif</p>
-        <p id="infoLokasiAbsen" class="text-sm font-bold text-blue-700">-</p>
+      <!-- TAB ABSEN -->
+      <div id="tab-absen" class="space-y-4">
+        <div class="bg-white rounded-2xl p-4 shadow-sm">
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status GPS & Absen</p>
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-base font-bold text-slate-700">
+              Jarak: <span id="absenJarak" class="text-green-600">Menunggu GPS...</span>
+            </p>
+          </div>
+          <p id="absenPesan" class="text-sm font-bold text-amber-600 mt-2"></p>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <button id="btnAbsenMasuk" onclick="openCamera('masuk')" class="h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2">
+            <i class="fa-solid fa-right-to-bracket text-2xl"></i>
+            <span class="text-base font-bold">ABSEN MASUK</span>
+          </button>
+          <button id="btnAbsenPulang" onclick="openCamera('pulang')" class="h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold shadow-sm flex flex-col items-center justify-center gap-2 cursor-not-allowed" disabled>
+            <i class="fa-solid fa-right-from-bracket text-2xl"></i>
+            <span class="text-base font-bold">ABSEN PULANG</span>
+          </button>
+        </div>
+        
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-3">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-location-dot text-blue-600"></i>
+            <div>
+              <p class="text-xs font-bold text-blue-800">Lokasi Aktif</p>
+              <p id="infoLokasiAbsen" class="text-sm font-bold text-blue-700">-</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</div>
 
       <!-- TAB PATROLI -->
       <div id="tab-patroli" class="hidden space-y-4">
@@ -133,7 +121,7 @@
           <textarea id="patroliCatatan" placeholder="Keterangan patroli..." class="w-full h-24 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
           <div class="grid grid-cols-2 gap-2">
             <button onclick="openCamera('patroli1')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli1">📷 Foto 1</button>
-            <button onclick="openCamera('patroli2')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2">📷 Foto 2</button>
+            <button onclick="openCamera('patroli2')" class="h-20 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2"> Foto 2</button>
           </div>
           <button onclick="submitPatroliFinal()" class="w-full mt-4 h-[48px] bg-amber-400 text-slate-900 rounded-xl font-bold shadow-lg active:scale-95 transition">KIRIM LAPORAN PATROLI</button>
         </div>
@@ -161,237 +149,213 @@
         </div>
       </div>
 
-      <!-- TAB INFO (Menu Utama + Sub-Halaman) -->
-<div id="tab-info" class="hidden space-y-4">
-  
-  <!-- MENU UTAMA INFO -->
-  <div id="info-menu-utama" class="space-y-3">
-    <div class="bg-white rounded-[24px] p-4 shadow-sm">
-      <p class="font-bold text-sm mb-3"><i class="fa-solid fa-circle-info text-blue-500"></i> Menu Informasi</p>
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="showInfoSub('rekap')" class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-          <i class="fa-solid fa-calendar-check text-2xl"></i>
-          <p class="text-[11px] font-bold">Rekap Absensi</p>
-        </button>
-        <button onclick="showInfoSub('shift')" class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-          <i class="fa-solid fa-right-left text-2xl"></i>
-          <p class="text-[11px] font-bold">Tukar Shift</p>
-        </button>
-        <button onclick="showInfoSub('ijin')" class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-          <i class="fa-solid fa-file-medical text-2xl"></i>
-          <p class="text-[11px] font-bold">Ijin / Sakit</p>
-        </button>
-        <button onclick="showInfoSub('riwayat')" class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-          <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
-          <p class="text-[11px] font-bold">Riwayat Pengajuan</p>
-        </button>
-        <button onclick="showInfoSub('gaji')" class="col-span-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-          <i class="fa-solid fa-money-bill-wave text-2xl"></i>
-          <p class="text-[11px] font-bold">Slip Gaji Saya</p>
-        </button>
-      </div>
-    </div>
-  </div>
+      <!-- TAB INFO -->
+      <div id="tab-info" class="hidden space-y-4">
+        <div id="info-menu-utama" class="space-y-3">
+          <div class="bg-white rounded-[24px] p-4 shadow-sm">
+            <p class="font-bold text-sm mb-3"><i class="fa-solid fa-circle-info text-blue-500"></i> Menu Informasi</p>
+            <div class="grid grid-cols-2 gap-3">
+              <button onclick="showInfoSub('rekap')" class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-calendar-check text-2xl"></i>
+                <p class="text-[11px] font-bold">Rekap Absensi</p>
+              </button>
+              <button onclick="showInfoSub('shift')" class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-right-left text-2xl"></i>
+                <p class="text-[11px] font-bold">Tukar Shift</p>
+              </button>
+              <button onclick="showInfoSub('ijin')" class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-file-medical text-2xl"></i>
+                <p class="text-[11px] font-bold">Ijin / Sakit</p>
+              </button>
+              <button onclick="showInfoSub('riwayat')" class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
+                <p class="text-[11px] font-bold">Riwayat Pengajuan</p>
+              </button>
+              <button onclick="showInfoSub('gaji')" class="col-span-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+                <i class="fa-solid fa-money-bill-wave text-2xl"></i>
+                <p class="text-[11px] font-bold">Slip Gaji Saya</p>
+              </button>
+            </div>
+          </div>
+        </div>
 
-  <!-- SUB: REKAP ABSENSI (Mobile Standard) -->
-<div id="info-sub-rekap" class="hidden space-y-4">
-  <div class="bg-white rounded-2xl p-4 shadow-sm">
-    <!-- Header dengan Tombol Kembali -->
-    <div class="flex items-center justify-between mb-4">
-      <p class="font-bold text-base flex items-center gap-2">
-        <i class="fa-solid fa-calendar-days text-blue-600"></i> Rekap Absensi
-      </p>
-      <div class="flex gap-2">
-        <button onclick="backToInfoMenu()" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
-          <i class="fa-solid fa-arrow-left"></i> Kembali
-        </button>
-        <button onclick="loadRekapAbsensi()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
-          <i class="fa-solid fa-rotate-right"></i> Refresh
-        </button>
-      </div>
-    </div>
-    
-    <!-- Pilih Bulan -->
-    <div class="mb-4">
-      <select id="rekapBulan" onchange="loadRekapAbsensi()" class="w-full h-11 bg-slate-50 rounded-lg px-3 text-sm border border-slate-200 outline-none font-bold text-slate-700">
-        <option value="">-- Pilih Bulan --</option>
-        <option value="2025-01">Januari 2025</option>
-        <option value="2025-02">Februari 2025</option>
-        <option value="2025-03">Maret 2025</option>
-        <option value="2025-04">April 2025</option>
-        <option value="2025-05">Mei 2025</option>
-        <option value="2025-06">Juni 2025</option>
-        <option value="2025-07">Juli 2025</option>
-        <option value="2025-08">Agustus 2025</option>
-        <option value="2025-09">September 2025</option>
-        <option value="2025-10">Oktober 2025</option>
-        <option value="2025-11">November 2025</option>
-        <option value="2025-12">Desember 2025</option>
-        <option value="2026-01">Januari 2026</option>
-        <option value="2026-02">Februari 2026</option>
-        <option value="2026-03">Maret 2026</option>
-        <option value="2026-04">April 2026</option>
-        <option value="2026-05">Mei 2026</option>
-        <option value="2026-06">Juni 2026</option>
-        <option value="2026-07">Juli 2026</option>
-        <option value="2026-08">Agustus 2026</option>
-        <option value="2026-09">September 2026</option>
-        <option value="2026-10">Oktober 2026</option>
-        <option value="2026-11">November 2026</option>
-        <option value="2026-12">Desember 2026</option>
-      </select>
-    </div>
-    
-    <!-- 4 Card Statistik (2x2) - Larger -->
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="bg-green-50 border-l-4 border-green-500 rounded-lg p-3">
-        <p class="text-xs text-slate-500 font-medium">Hadir</p>
-        <p id="statHadir" class="text-2xl font-extrabold text-green-600 leading-tight">0</p>
-      </div>
-      <div class="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-3">
-        <p class="text-xs text-slate-500 font-medium">Izin</p>
-        <p id="statIjin" class="text-2xl font-extrabold text-orange-500 leading-tight">0</p>
-      </div>
-      <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3">
-        <p class="text-xs text-slate-500 font-medium">Sakit</p>
-        <p id="statSakit" class="text-2xl font-extrabold text-blue-600 leading-tight">0</p>
-      </div>
-      <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
-        <p class="text-xs text-slate-500 font-medium">Alpha</p>
-        <p id="statAlpha" class="text-2xl font-extrabold text-red-600 leading-tight">-</p>
-      </div>
-    </div>
-    
-    <!-- Info Alpha -->
-    <p id="infoAlpha" class="text-xs text-slate-500 italic mb-4 text-center">* Alpha dihitung otomatis di akhir bulan</p>
-    
-    <!-- Kalender Absensi - Larger -->
-    <div class="mb-4">
-      <p class="font-bold text-base mb-3 flex items-center gap-2">
-        <span class="text-lg">📅</span> Kalender Absensi
-      </p>
-      <!-- Header Hari -->
-      <div class="grid grid-cols-7 gap-1 mb-2">
-        <div class="text-center text-xs font-bold text-slate-400 py-1">M</div>
-        <div class="text-center text-xs font-bold text-slate-400 py-1">S</div>
-        <div class="text-center text-xs font-bold text-slate-400 py-1">S</div>
-        <div class="text-center text-xs font-bold text-slate-400 py-1">R</div>
-        <div class="text-center text-xs font-bold text-slate-400 py-1">K</div>
-        <div class="text-center text-xs font-bold text-slate-400 py-1">J</div>
-        <div class="text-center text-xs font-bold text-slate-400 py-1">S</div>
-      </div>
-      <!-- Grid Tanggal - Larger (44px touch target) -->
-      <div id="kalenderGrid" class="grid grid-cols-7 gap-1">
-        <!-- Diisi oleh JS -->
-      </div>
-      <!-- Legend - Larger -->
-      <div class="flex flex-wrap gap-3 mt-3 text-xs text-slate-600">
-        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-green-200"></div> Lengkap</div>
-        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-yellow-200"></div> Tdk Lengkap</div>
-        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded border-2 border-blue-500"></div> Hari Ini</div>
-        <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-orange-200"></div> Izin</div>
-      </div>
-    </div>
-    
-    <!-- Detail Harian - Larger -->
-    <div>
-      <p class="font-bold text-base mb-3 flex items-center gap-2">
-        <i class="fa-solid fa-clipboard-list text-blue-600"></i> Detail Harian
-      </p>
-      <div class="overflow-x-auto rounded-lg border border-slate-200">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="bg-slate-100 text-slate-600">
-              <th class="py-2 px-2 text-left font-bold">Tgl</th>
-              <th class="py-2 px-2 text-center font-bold">Masuk</th>
-              <th class="py-2 px-2 text-center font-bold">Pulang</th>
-              <th class="py-2 px-2 text-center font-bold">Status</th>
-            </tr>
-          </thead>
-          <tbody id="tabelDetailHarian" class="bg-white">
-            <tr><td colspan="4" class="py-4 text-center text-slate-400 text-xs">Pilih tanggal di kalender</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
+        <div id="info-sub-rekap" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <p class="font-bold text-base flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days text-blue-600"></i> Rekap Absensi
+              </p>
+              <div class="flex gap-2">
+                <button onclick="backToInfoMenu()" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+                  <i class="fa-solid fa-arrow-left"></i> Kembali
+                </button>
+                <button onclick="loadRekapAbsensi()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+                  <i class="fa-solid fa-rotate-right"></i> Refresh
+                </button>
+              </div>
+            </div>
+            <div class="mb-4">
+              <select id="rekapBulan" onchange="loadRekapAbsensi()" class="w-full h-11 bg-slate-50 rounded-lg px-3 text-sm border border-slate-200 outline-none font-bold text-slate-700">
+                <option value="">-- Pilih Bulan --</option>
+                <option value="2025-01">Januari 2025</option>
+                <option value="2025-02">Februari 2025</option>
+                <option value="2025-03">Maret 2025</option>
+                <option value="2025-04">April 2025</option>
+                <option value="2025-05">Mei 2025</option>
+                <option value="2025-06">Juni 2025</option>
+                <option value="2025-07">Juli 2025</option>
+                <option value="2025-08">Agustus 2025</option>
+                <option value="2025-09">September 2025</option>
+                <option value="2025-10">Oktober 2025</option>
+                <option value="2025-11">November 2025</option>
+                <option value="2025-12">Desember 2025</option>
+                <option value="2026-01">Januari 2026</option>
+                <option value="2026-02">Februari 2026</option>
+                <option value="2026-03">Maret 2026</option>
+                <option value="2026-04">April 2026</option>
+                <option value="2026-05">Mei 2026</option>
+                <option value="2026-06">Juni 2026</option>
+                <option value="2026-07">Juli 2026</option>
+                <option value="2026-08">Agustus 2026</option>
+                <option value="2026-09">September 2026</option>
+                <option value="2026-10">Oktober 2026</option>
+                <option value="2026-11">November 2026</option>
+                <option value="2026-12">Desember 2026</option>
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="bg-green-50 border-l-4 border-green-500 rounded-lg p-3">
+                <p class="text-xs text-slate-500 font-medium">Hadir</p>
+                <p id="statHadir" class="text-2xl font-extrabold text-green-600 leading-tight">0</p>
+              </div>
+              <div class="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-3">
+                <p class="text-xs text-slate-500 font-medium">Izin</p>
+                <p id="statIjin" class="text-2xl font-extrabold text-orange-500 leading-tight">0</p>
+              </div>
+              <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3">
+                <p class="text-xs text-slate-500 font-medium">Sakit</p>
+                <p id="statSakit" class="text-2xl font-extrabold text-blue-600 leading-tight">0</p>
+              </div>
+              <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
+                <p class="text-xs text-slate-500 font-medium">Alpha</p>
+                <p id="statAlpha" class="text-2xl font-extrabold text-red-600 leading-tight">-</p>
+              </div>
+            </div>
+            <p id="infoAlpha" class="text-xs text-slate-500 italic mb-4 text-center">* Alpha dihitung otomatis di akhir bulan</p>
+            <div class="mb-4">
+              <p class="font-bold text-base mb-3 flex items-center gap-2">
+                <span class="text-lg"></span> Kalender Absensi
+              </p>
+              <div class="grid grid-cols-7 gap-1 mb-2">
+                <div class="text-center text-xs font-bold text-slate-400 py-1">M</div>
+                <div class="text-center text-xs font-bold text-slate-400 py-1">S</div>
+                <div class="text-center text-xs font-bold text-slate-400 py-1">S</div>
+                <div class="text-center text-xs font-bold text-slate-400 py-1">R</div>
+                <div class="text-center text-xs font-bold text-slate-400 py-1">K</div>
+                <div class="text-center text-xs font-bold text-slate-400 py-1">J</div>
+                <div class="text-center text-xs font-bold text-slate-400 py-1">S</div>
+              </div>
+              <div id="kalenderGrid" class="grid grid-cols-7 gap-1"></div>
+              <div class="flex flex-wrap gap-3 mt-3 text-xs text-slate-600">
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-green-200"></div> Lengkap</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-yellow-200"></div> Tdk Lengkap</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded border-2 border-blue-500"></div> Hari Ini</div>
+                <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-orange-200"></div> Izin</div>
+              </div>
+            </div>
+            <div>
+              <p class="font-bold text-base mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list text-blue-600"></i> Detail Harian
+              </p>
+              <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="bg-slate-100 text-slate-600">
+                      <th class="py-2 px-2 text-left font-bold">Tgl</th>
+                      <th class="py-2 px-2 text-center font-bold">Masuk</th>
+                      <th class="py-2 px-2 text-center font-bold">Pulang</th>
+                      <th class="py-2 px-2 text-center font-bold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tabelDetailHarian" class="bg-white">
+                    <tr><td colspan="4" class="py-4 text-center text-slate-400 text-xs">Pilih tanggal di kalender</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <!-- SUB: TUKAR SHIFT -->
-  <div id="info-sub-shift" class="hidden space-y-3">
-    <div class="bg-white rounded-[24px] p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <p class="font-bold text-sm"><i class="fa-solid fa-right-left text-purple-600"></i> Tukar Shift/Jadwal</p>
-        <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
-      </div>
-      <input type="date" id="shiftTanggal" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
-      <div class="grid grid-cols-2 gap-2 mb-2">
-        <select id="shiftLama" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none font-bold">
-          <option value="Pagi">Shift Pagi</option>
-          <option value="Siang">Shift Siang</option>
-          <option value="Malam">Shift Malam</option>
-        </select>
-        <select id="shiftBaru" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none font-bold">
-          <option value="Pagi">Shift Pagi</option>
-          <option value="Siang">Shift Siang</option>
-          <option value="Malam">Shift Malam</option>
-        </select>
-      </div>
-      <input id="shiftPenggantiUser" placeholder="Username Pengganti" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
-      <input id="shiftPenggantiNama" placeholder="Nama Pengganti" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
-      <textarea id="shiftAlasan" placeholder="Alasan tukar shift..." class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
-      <button onclick="submitShiftFinal()" class="w-full h-[48px] bg-purple-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN TUKAR SHIFT</button>
-    </div>
-  </div>
+        <div id="info-sub-shift" class="hidden space-y-3">
+          <div class="bg-white rounded-[24px] p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-bold text-sm"><i class="fa-solid fa-right-left text-purple-600"></i> Tukar Shift/Jadwal</p>
+              <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
+            </div>
+            <input type="date" id="shiftTanggal" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <select id="shiftLama" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none font-bold">
+                <option value="Pagi">Shift Pagi</option>
+                <option value="Siang">Shift Siang</option>
+                <option value="Malam">Shift Malam</option>
+              </select>
+              <select id="shiftBaru" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none font-bold">
+                <option value="Pagi">Shift Pagi</option>
+                <option value="Siang">Shift Siang</option>
+                <option value="Malam">Shift Malam</option>
+              </select>
+            </div>
+            <input id="shiftPenggantiUser" placeholder="Username Pengganti" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
+            <input id="shiftPenggantiNama" placeholder="Nama Pengganti" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
+            <textarea id="shiftAlasan" placeholder="Alasan tukar shift..." class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
+            <button onclick="submitShiftFinal()" class="w-full h-[48px] bg-purple-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN TUKAR SHIFT</button>
+          </div>
+        </div>
 
-  <!-- SUB: IJIN/SAKIT -->
-  <div id="info-sub-ijin" class="hidden space-y-3">
-    <div class="bg-white rounded-[24px] p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <p class="font-bold text-sm"><i class="fa-solid fa-file-medical text-amber-500"></i> Ijin / Sakit</p>
-        <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
-      </div>
-      <select id="ijinJenis" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2 font-bold">
-        <option value="SAKIT">Sakit (dengan surat dokter)</option>
-        <option value="IJIN">Ijin Pribadi (dengan keterangan)</option>
-      </select>
-      <div class="grid grid-cols-2 gap-2 mb-2">
-        <input type="date" id="ijinMulai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
-        <input type="date" id="ijinSelesai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
-      </div>
-      <textarea id="ijinKet" placeholder="Keterangan (misal: Menikah, ada undangan)" class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
-      <button onclick="openCamera('ijin')" class="w-full h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500 mb-3" id="btnIjin">📷 Upload Bukti (Surat Dokter/Undangan)</button>
-      <button onclick="submitIjinFinal()" class="w-full h-[48px] bg-amber-500 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN IJIN/SAKIT</button>
-    </div>
-  </div>
+        <div id="info-sub-ijin" class="hidden space-y-3">
+          <div class="bg-white rounded-[24px] p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-bold text-sm"><i class="fa-solid fa-file-medical text-amber-500"></i> Ijin / Sakit</p>
+              <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
+            </div>
+            <select id="ijinJenis" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2 font-bold">
+              <option value="SAKIT">Sakit (dengan surat dokter)</option>
+              <option value="IJIN">Ijin Pribadi (dengan keterangan)</option>
+            </select>
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <input type="date" id="ijinMulai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
+              <input type="date" id="ijinSelesai" class="h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none">
+            </div>
+            <textarea id="ijinKet" placeholder="Keterangan (misal: Menikah, ada undangan)" class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
+            <button onclick="openCamera('ijin')" class="w-full h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center text-xs font-bold text-slate-500 mb-3" id="btnIjin">📷 Upload Bukti (Surat Dokter/Undangan)</button>
+            <button onclick="submitIjinFinal()" class="w-full h-[48px] bg-amber-500 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">AJUKAN IJIN/SAKIT</button>
+          </div>
+        </div>
 
-  <!-- SUB: RIWAYAT PENGAJUAN -->
-  <div id="info-sub-riwayat" class="hidden space-y-3">
-    <div class="bg-white rounded-[24px] p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <p class="font-bold text-sm"><i class="fa-solid fa-clock-rotate-left text-slate-700"></i> Riwayat Pengajuan</p>
-        <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
-      </div>
-      <div id="listPengajuan" class="space-y-2">
-        <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
-      </div>
-    </div>
-  </div>
+        <div id="info-sub-riwayat" class="hidden space-y-3">
+          <div class="bg-white rounded-[24px] p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-bold text-sm"><i class="fa-solid fa-clock-rotate-left text-slate-700"></i> Riwayat Pengajuan</p>
+              <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
+            </div>
+            <div id="listPengajuan" class="space-y-2">
+              <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
+            </div>
+          </div>
+        </div>
 
-  <!-- SUB: SLIP GAJI -->
-  <div id="info-sub-gaji" class="hidden space-y-3">
-    <div class="bg-white rounded-[24px] p-4 shadow-sm">
-      <div class="flex items-center justify-between mb-3">
-        <p class="font-bold text-sm"><i class="fa-solid fa-money-bill-wave text-green-500"></i> Slip Gaji Saya</p>
-        <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
+        <div id="info-sub-gaji" class="hidden space-y-3">
+          <div class="bg-white rounded-[24px] p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <p class="font-bold text-sm"><i class="fa-solid fa-money-bill-wave text-green-500"></i> Slip Gaji Saya</p>
+              <button onclick="backToInfoMenu()" class="text-[11px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold">← Kembali</button>
+            </div>
+            <div id="listSlipGaji" class="space-y-2">
+              <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div id="listSlipGaji" class="space-y-2">
-        <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
-      </div>
-    </div>
-  </div>
-
-</div>
 
       <!-- TAB PROFIL -->
       <div id="tab-profil" class="hidden space-y-4">
@@ -436,54 +400,41 @@
     </div>
   </div>
 
-<!-- Input Tersembunyi untuk Absen Langsung Selfie -->
-<input type="file" id="cameraInputAbsen" accept="image/*" capture="user" class="hidden">
+  <!-- Input Tersembunyi untuk Absen Langsung Selfie -->
+  <input type="file" id="cameraInputAbsen" accept="image/*" capture="user" class="hidden">
 
-<!-- Video Element untuk Kamera Depan (Fallback) -->
-<video id="videoAbsen" autoplay playsinline class="hidden"></video>
-<canvas id="canvasAbsen" class="hidden"></canvas>
+  <!-- Video Element untuk Kamera Depan -->
+  <video id="videoAbsen" autoplay playsinline class="hidden"></video>
+  <canvas id="canvasAbsen" class="hidden"></canvas>
 
-<!-- Modal Kamera Depan untuk Absen -->
-<div id="cameraModalAbsen" class="fixed inset-0 z-[100] bg-black hidden flex-col">
-  <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
-    <p class="mb-2 text-base font-bold text-amber-400">Selfie Absensi</p>
-    <video id="videoLive" autoplay playsinline class="w-full max-h-[60vh] rounded-xl border-2 border-amber-400"></video>
-    <p class="text-xs text-white/50 mt-2">Posisikan wajah Anda di tengah</p>
+  <!-- Modal Kamera Depan untuk Absen -->
+  <div id="cameraModalAbsen" class="fixed inset-0 z-[100] bg-black hidden flex-col">
+    <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
+      <p class="mb-2 text-base font-bold text-amber-400">Selfie Absensi</p>
+      <video id="videoLive" autoplay playsinline class="w-full max-h-[60vh] rounded-xl border-2 border-amber-400"></video>
+      <p class="text-xs text-white/50 mt-2">Posisikan wajah Anda di tengah</p>
+    </div>
+    <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
+      <button onclick="closeCameraAbsen()" class="text-white/70 font-bold">BATAL</button>
+      <button onclick="captureSelfie()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg active:scale-95 transition">📸 AMBIL FOTO</button>
+    </div>
   </div>
-  <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
-    <button onclick="closeCameraAbsen()" class="text-white/70 font-bold">BATAL</button>
-    <button onclick="captureSelfie()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg active:scale-95 transition"> AMBIL FOTO</button>
-  </div>
-</div>
 
-<!-- Modal Kamera (Hanya untuk Patroli/Kejadian/Ijin) -->
-<div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col">
-  <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
-    <p id="cameraTitle" class="mb-2 text-base font-bold text-amber-400">Ambil Foto</p>
-    <p id="cameraTimemark" class="mb-4 text-xs text-white/80 mono text-center"></p>
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
-    <button onclick="document.getElementById('cameraInput').click()" class="bg-amber-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-base mb-4 shadow-lg active:scale-95 transition">📸 Buka Kamera</button>
-    <img id="previewImage" class="max-w-full max-h-[50vh] rounded-xl hidden border-2 border-amber-400 shadow-lg">
-    <p id="cameraHint" class="text-xs text-white/50 mt-2">Klik tombol di atas untuk membuka kamera</p>
+  <!-- Modal Kamera (Hanya untuk Patroli/Kejadian/Ijin) -->
+  <div id="cameraModal" class="fixed inset-0 z-[100] bg-black hidden flex-col">
+    <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
+      <p id="cameraTitle" class="mb-2 text-base font-bold text-amber-400">Ambil Foto</p>
+      <p id="cameraTimemark" class="mb-4 text-xs text-white/80 mono text-center"></p>
+      <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+      <button onclick="document.getElementById('cameraInput').click()" class="bg-amber-400 text-slate-900 px-6 py-3 rounded-xl font-bold text-base mb-4 shadow-lg active:scale-95 transition">📸 Buka Kamera</button>
+      <img id="previewImage" class="max-w-full max-h-[50vh] rounded-xl hidden border-2 border-amber-400 shadow-lg">
+      <p id="cameraHint" class="text-xs text-white/50 mt-2">Klik tombol di atas untuk membuka kamera</p>
+    </div>
+    <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
+      <button onclick="closeCamera()" class="text-white/70 font-bold">BATAL</button>
+      <button id="btnSendPhoto" onclick="sendPhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold hidden shadow-lg active:scale-95 transition">✅ KIRIM</button>
+    </div>
   </div>
-  <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
-    <button onclick="closeCamera()" class="text-white/70 font-bold">BATAL</button>
-    <button id="btnSendPhoto" onclick="sendPhoto()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold hidden shadow-lg active:scale-95 transition">✅ KIRIM</button>
-  </div>
-</div>
-
-<!-- Modal Kamera Depan untuk Absen -->
-<div id="cameraModalAbsen" class="fixed inset-0 z-[100] bg-black hidden flex-col">
-  <div class="flex-1 bg-slate-800 flex flex-col items-center justify-center text-white p-4">
-    <p class="mb-2 text-base font-bold text-amber-400">Selfie Absensi</p>
-    <video id="videoLive" autoplay playsinline class="w-full max-h-[60vh] rounded-xl border-2 border-amber-400"></video>
-    <p class="text-xs text-white/50 mt-2">Posisikan wajah Anda di tengah</p>
-  </div>
-  <div class="h-[80px] bg-[#0f172a] flex justify-between items-center px-6 border-t border-white/10">
-    <button onclick="closeCameraAbsen()" class="text-white/70 font-bold">BATAL</button>
-    <button onclick="captureSelfie()" class="bg-amber-400 text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg active:scale-95 transition">📸 AMBIL FOTO</button>
-  </div>
-</div>
 
   <script src="./app.js"></script>
 </body>
