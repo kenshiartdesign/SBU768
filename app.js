@@ -59,7 +59,7 @@ function updateAbsenUI() {
   }
 }
 
-// ===== JAM & TANGGAL =====
+// ===== JAM & TANGGAL (Screen Pilih Lokasi) =====
 function updateJamDigital() {
   const now = new Date();
   const jam = String(now.getHours()).padStart(2, '0');
@@ -94,25 +94,31 @@ function startClock() {
   }, 1000);
 }
 
-// ===== JAM MINI DI HEADER ABSEN =====
+// ===== JAM DIGITAL MODERN (Header Absen) =====
 function updateJamMini() {
   const now = new Date();
+  
+  // Jam dengan detik berjalan
   const jam = String(now.getHours()).padStart(2, '0');
   const menit = String(now.getMinutes()).padStart(2, '0');
+  const detik = String(now.getSeconds()).padStart(2, '0');
   const jamEl = document.getElementById('jamDigitalMini');
-  if (jamEl) jamEl.innerText = jam + ':' + menit;
+  if (jamEl) jamEl.innerText = jam + ':' + menit + ':' + detik;
   
+  // Hari + Pasaran Jawa
+  const hariMasehi = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const hariNama = hariMasehi[now.getDay()];
+  const pasaran = hitungHariPasaran();
   const hariPasaranEl = document.getElementById('hariPasaranMini');
-  if (hariPasaranEl) hariPasaranEl.innerText = hitungHariPasaran();
+  if (hariPasaranEl) hariPasaranEl.innerText = hariNama + ' ' + pasaran;
   
+  // Tanggal Lengkap
+  const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const tanggalEl = document.getElementById('tanggalMini');
-  if (tanggalEl) {
-    const hariMasehi = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-    tanggalEl.innerText = hariMasehi[now.getDay()] + ', ' + now.getDate() + ' ' + bulan[now.getMonth()];
-  }
+  if (tanggalEl) tanggalEl.innerText = now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
 }
 
+// Update jam mini setiap detik
 setInterval(updateJamMini, 1000);
 updateJamMini();
 
@@ -556,9 +562,9 @@ async function submitPatroliFinal() {
     document.getElementById('patroliLokasi').value = '';
     document.getElementById('patroliCatatan').value = '';
     resetBtn('btnPatroli1', '📷 Foto 1');
-    resetBtn('btnPatroli2', '📷 Foto 2');
+    resetBtn('btnPatroli2', ' Foto 2');
   } else {
-    alert(' Gagal: ' + result.message);
+    alert('❌ Gagal: ' + result.message);
   }
   showLoading(false);
 }
@@ -592,7 +598,7 @@ async function submitKejadianFinal() {
     document.getElementById('kejadianLokasi').value = '';
     document.getElementById('kejadianKronologi').value = '';
     resetBtn('btnKejadian1', '📷 Bukti 1');
-    resetBtn('btnKejadian2', '📷 Bukti 2');
+    resetBtn('btnKejadian2', ' Bukti 2');
   } else {
     alert('❌ Gagal: ' + result.message);
   }
@@ -685,11 +691,11 @@ async function loadPengajuanUser() {
     } else {
       listEl.innerHTML = allPengajuan.map(p => {
         let statusColor = p.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : p.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '';
+        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '❌';
         if (p.type === 'IJIN') {
           return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
         } else {
-          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
+          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600"> ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
         }
       }).join('');
     }
