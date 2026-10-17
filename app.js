@@ -181,13 +181,14 @@ async function checkAbsenStatus() {
   const pesanEl = document.getElementById('absenPesan');
   
   try {
-    // Cache buster: selalu ambil data terbaru dari server
     const url = `${CONFIG.GAS_URL}?action=getAbsenStatus&username=${encodeURIComponent(currentUser.username)}&t=${Date.now()}`;
     const res = await fetch(url);
     const result = await res.json();
     
+    // DEBUG: Lihat di Console browser (F12) apa yang dikembalikan server
+    console.log('📡 SERVER RESPONSE:', result);
+    
     if (result.status === 'success') {
-      // Update tombol MASUK
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -198,7 +199,6 @@ async function checkAbsenStatus() {
         btnMasuk.onclick = null;
       }
       
-      // Update tombol PULANG
       if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
         btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -209,13 +209,17 @@ async function checkAbsenStatus() {
         btnPulang.onclick = null;
       }
       
-      // Update pesan
       if (pesanEl) {
         pesanEl.innerText = result.pesan || '';
         if (result.pesan.includes('sudah absen masuk')) pesanEl.className = 'text-sm font-bold mt-2 text-green-600';
         else if (result.pesan.toLowerCase().includes('terkunci')) pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
         else pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
       }
+    }
+  } catch (e) {
+    console.error('❌ Check status error:', e);
+  }
+}
       
       // Simpan status sementara untuk fallback (jika server error)
       if (result.last_masuk && !result.last_pulang) {
@@ -228,6 +232,7 @@ async function checkAbsenStatus() {
     }
   } catch (e) {
     console.error('[checkAbsenStatus] Error:', e);
+    
     // Fallback: gunakan localStorage jika server error
     const savedStatus = JSON.parse(localStorage.getItem('sbu_absen_status') || 'null');
     if (savedStatus) {
