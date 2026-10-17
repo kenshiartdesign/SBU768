@@ -11,6 +11,7 @@ let capturedBase64 = null;
 let patroliData = { foto1: '', foto2: '' };
 let kejadianData = { foto1: '', foto2: '' };
 let ijinData = { foto: '' };
+let videoStream = null;
 
 // ===== LOADING =====
 function showLoading(show) {
@@ -154,25 +155,70 @@ async function showMainScreen() {
   loadPengajuanUser();
 }
 
-// ===== CEK STATUS ABSEN (ANTI STUCK & CACHE BUSTER) =====
+// ===== CEK STATUS ABSEN (DENGAN OPTIMISTIC LOCK) =====
 async function checkAbsenStatus() {
   if (!currentUser) return;
   const btnMasuk = document.getElementById('btnAbsenMasuk');
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
   
+  // Cek optimistic lock dari localStorage
+  const confirmedStatus = JSON.parse(localStorage.getItem('sbu_absen_confirmed') || 'null');
+  
   try {
     const url = `${CONFIG.GAS_URL}?action=getAbsenStatus&username=${encodeURIComponent(currentUser.username)}&t=${Date.now()}`;
     const res = await fetch(url);
     const result = await res.json();
     
-    console.log('[Server Response]:', result);
+    console.log('[checkAbsenStatus] Server response:', result);
+    console.log('[checkAbsenStatus] Confirmed status:', confirmedStatus);
     
     if (result.status === 'success') {
-      // PAKSA RESET JIKA DATA DI SERVER KOSONG (Baru dihapus manual)
+      // Jika ada optimistic lock dan belum expired (12 jam)
+      if (confirmedStatus && confirmedStatus.last_action) {
+        const lockTime = new Date(confirmedStatus.timestamp);
+        const now = new Date();
+        const hoursDiff = (now - lockTime) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 12) {
+          console.log('[checkAbsenStatus] Menggunakan optimistic lock:', confirmedStatus.last_action);
+          
+          if (confirmedStatus.last_action === 'masuk') {
+            // Kunci tombol masuk, aktifkan tombol pulang
+            btnMasuk.disabled = true;
+            btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+            btnMasuk.onclick = null;
+            
+            btnPulang.disabled = false;
+            btnPulang.className = 'h-24 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
+            btnPulang.onclick = () => openCamera('pulang');
+            
+            if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
+            return; // Jangan lanjut ke logika server
+          } else if (confirmedStatus.last_action === 'pulang') {
+            // Kunci kedua tombol
+            btnMasuk.disabled = true;
+            btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+            btnMasuk.onclick = null;
+            
+            btnPulang.disabled = true;
+            btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
+            btnPulang.onclick = null;
+            
+            if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
+            return; // Jangan lanjut ke logika server
+          }
+        } else {
+          // Lock expired, hapus
+          localStorage.removeItem('sbu_absen_confirmed');
+          console.log('[checkAbsenStatus] Optimistic lock expired');
+        }
+      }
+      
+      // Fallback ke logika server jika tidak ada lock
       if (!result.last_masuk && !result.last_pulang) {
-        console.log('Data server kosong. Memaksa reset tombol...');
-        localStorage.removeItem('sbu_absen_status');
+        console.log('[checkAbsenStatus] Data server kosong. Reset tombol...');
+        localStorage.removeItem('sbu_absen_confirmed');
         
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -186,7 +232,7 @@ async function checkAbsenStatus() {
         return;
       }
 
-      // Logika Normal jika ada data
+      // Logika normal dari server
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -213,17 +259,112 @@ async function checkAbsenStatus() {
         else if (result.pesan.toLowerCase().includes('terkunci')) pesanEl.className = 'text-sm font-bold mt-2 text-red-600';
         else pesanEl.className = 'text-sm font-bold mt-2 text-amber-600';
       }
-      
-      if (result.last_masuk && !result.last_pulang) {
-        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'masuk', timestamp: new Date(result.last_masuk).toISOString() }));
-      } else if (result.last_pulang) {
-        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'pulang', timestamp: new Date(result.last_pulang).toISOString() }));
-      }
     }
   } catch (e) { console.error('[checkAbsenStatus] Error:', e); }
 }
 
-// ===== KAMERA & WATERMARK =====
+// ===== KAMERA DEPAN DENGAN getUserMedia =====
+async function openCameraAbsen(action) {
+  console.log('[openCameraAbsen] Action:', action);
+  currentCameraAction = action;
+  
+  const modal = document.getElementById('cameraModalAbsen');
+  const video = document.getElementById('videoLive');
+  
+  try {
+    // Minta izin kamera depan
+    videoStream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false 
+    });
+    
+    video.srcObject = videoStream;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    
+    console.log('[openCameraAbsen] Kamera depan aktif');
+  } catch (err) {
+    console.error('[openCameraAbsen] Error:', err);
+    alert('Gagal mengakses kamera depan: ' + err.message + '\n\nPastikan Anda memberikan izin kamera di browser.');
+  }
+}
+
+function closeCameraAbsen() {
+  const modal = document.getElementById('cameraModalAbsen');
+  const video = document.getElementById('videoLive');
+  
+  if (videoStream) {
+    videoStream.getTracks().forEach(track => track.stop());
+    videoStream = null;
+  }
+  
+  video.srcObject = null;
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function captureSelfie() {
+  const video = document.getElementById('videoLive');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  
+  // Flip horizontal karena kamera depan
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  
+  // Tambahkan watermark
+  const now = new Date();
+  const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const tanggal = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const statusText = currentCameraAction === 'masuk' ? 'ABSEN MASUK' : 'ABSEN PULANG';
+  const lokasiText = selectedLokasi ? selectedLokasi.nama_lokasi : 'Unknown';
+  const namaUser = currentUser ? currentUser.nama : 'Unknown';
+  
+  const watermarkHeight = 130;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+  
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+  ctx.fillRect(0, canvas.height - watermarkHeight, canvas.width, watermarkHeight);
+  
+  ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 26px Arial'; ctx.textAlign = 'center';
+  ctx.fillText(statusText, canvas.width / 2, canvas.height - watermarkHeight + 35);
+  
+  ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial';
+  ctx.fillText(namaUser, canvas.width / 2, canvas.height - watermarkHeight + 65);
+  
+  ctx.fillStyle = '#e5e7eb'; ctx.font = '15px Arial';
+  ctx.fillText(tanggal, canvas.width / 2, canvas.height - watermarkHeight + 90);
+  
+  ctx.fillStyle = '#10b981'; ctx.font = 'bold 16px Arial';
+  ctx.fillText('⏰ ' + jam, canvas.width / 2, canvas.height - watermarkHeight + 115);
+  
+  if (gps) {
+    ctx.fillStyle = '#9ca3af'; ctx.font = '13px monospace';
+    ctx.fillText('📍 ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), canvas.width / 2, canvas.height - watermarkHeight + 140);
+  }
+  
+  // Convert ke base64
+  capturedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+  
+  // Tutup kamera
+  closeCameraAbsen();
+  
+  // Kirim ke server
+  showLoading(true);
+  try {
+    await submitAbsenToGAS(currentCameraAction, capturedBase64);
+  } catch (err) {
+    alert('Terjadi kesalahan: ' + err.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ===== KAMERA MODAL (PATROLI/KEJADIAN/IJIN) =====
 function compressImage(file, maxWidth = 800, quality = 0.7) {
   return new Promise((resolve) => {
     const reader = new FileReader(); reader.readAsDataURL(file);
@@ -235,62 +376,12 @@ function compressImage(file, maxWidth = 800, quality = 0.7) {
         if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
-        
-        // WATERMARK
-        const now = new Date();
-        const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const tanggal = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const statusText = currentCameraAction === 'masuk' ? 'ABSEN MASUK' : 'ABSEN PULANG';
-        const lokasiText = selectedLokasi ? selectedLokasi.nama_lokasi : 'Unknown';
-        const namaUser = currentUser ? currentUser.nama : 'Unknown';
-        
-        const watermarkHeight = 130;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(0, height - watermarkHeight, width, watermarkHeight);
-        
-        ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 26px Arial'; ctx.textAlign = 'center';
-        ctx.fillText(statusText, width / 2, height - watermarkHeight + 35);
-        
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial';
-        ctx.fillText(namaUser, width / 2, height - watermarkHeight + 65);
-        
-        ctx.fillStyle = '#e5e7eb'; ctx.font = '15px Arial';
-        ctx.fillText(tanggal, width / 2, height - watermarkHeight + 90);
-        
-        ctx.fillStyle = '#10b981'; ctx.font = 'bold 16px Arial';
-        ctx.fillText('⏰ ' + jam, width / 2, height - watermarkHeight + 115);
-        
-        if (gps) {
-          ctx.fillStyle = '#9ca3af'; ctx.font = '13px monospace';
-          ctx.fillText('📍 ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), width / 2, height - watermarkHeight + 140);
-        }
-        
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
     };
   });
 }
 
-// ===== EVENT LISTENER INPUT ABSEN (LANGSUNG SELFIE) =====
-document.getElementById('cameraInputAbsen').addEventListener('change', async function(e) {
-  console.log('[cameraInputAbsen] File dipilih:', e.target.files[0]?.name);
-  if (e.target.files && e.target.files[0]) {
-    showLoading(true);
-    try {
-      capturedBase64 = await compressImage(e.target.files[0]);
-      console.log('[cameraInputAbsen] Foto dikompresi, action:', currentCameraAction);
-      await submitAbsenToGAS(currentCameraAction, capturedBase64);
-    } catch (err) {
-      console.error('[cameraInputAbsen] Error:', err);
-      alert('Terjadi kesalahan: ' + err.message);
-    } finally {
-      showLoading(false);
-      e.target.value = ''; // Reset input agar bisa foto lagi
-    }
-  }
-});
-
-// ===== EVENT LISTENER INPUT MODAL (PATROLI/KEJADIAN/IJIN) =====
 document.getElementById('cameraInput').addEventListener('change', async function(e) {
   if (e.target.files && e.target.files[0]) {
     showLoading(true);
@@ -303,20 +394,13 @@ document.getElementById('cameraInput').addEventListener('change', async function
   }
 });
 
-// ===== BUKA KAMERA =====
 function openCamera(action) {
   console.log('[openCamera] Action:', action);
   currentCameraAction = action;
   
-  // Untuk ABSEN MASUK/PULANG: Langsung buka kamera depan tanpa modal
+  // Untuk ABSEN: Pakai getUserMedia (kamera depan langsung)
   if (action === 'masuk' || action === 'pulang') {
-    const inputAbsen = document.getElementById('cameraInputAbsen');
-    if (inputAbsen) {
-      inputAbsen.value = ''; // Reset
-      inputAbsen.click(); // Langsung buka kamera depan
-    } else {
-      alert('Error: Input kamera tidak ditemukan');
-    }
+    openCameraAbsen(action);
     return;
   }
   
@@ -346,7 +430,7 @@ function openCamera(action) {
   
   if (timemark) {
     const now = new Date();
-    timemark.innerText = `📍 ${selectedLokasi ? selectedLokasi.nama_lokasi : '-'} |  ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
+    timemark.innerText = `📍 ${selectedLokasi ? selectedLokasi.nama_lokasi : '-'} | ⏰ ${now.toLocaleDateString('id-ID')} ${now.toLocaleTimeString('id-ID')}`;
   }
   
   modal.classList.remove('hidden'); 
@@ -379,7 +463,7 @@ function resetBtn(id, text) {
   btn.innerText = text; btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== SUBMIT ABSEN (PERSISTEN) =====
+// ===== SUBMIT ABSEN (DENGAN OPTIMISTIC LOCK) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const now = new Date();
@@ -400,7 +484,15 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
     if (result.status === 'success') { 
       alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
       
-      // LANGSUNG UPDATE UI TANPA PANGGIL checkAbsenStatus (Agar Persisten)
+      // SET OPTIMISTIC LOCK (Tombol persisten 12 jam)
+      const lockData = {
+        last_action: tipe,
+        timestamp: now.toISOString(),
+        expires_at: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString()
+      };
+      localStorage.setItem('sbu_absen_confirmed', JSON.stringify(lockData));
+      
+      // Update UI langsung
       const btnMasuk = document.getElementById('btnAbsenMasuk');
       const btnPulang = document.getElementById('btnAbsenPulang');
       const pesanEl = document.getElementById('absenPesan');
@@ -415,7 +507,6 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
         btnPulang.onclick = () => openCamera('pulang');
         
         if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
-        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'masuk', timestamp: now.toISOString() }));
         
       } else if (tipe === 'pulang') {
         btnMasuk.disabled = true;
@@ -427,13 +518,15 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
         btnPulang.onclick = null;
         
         if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
-        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'pulang', timestamp: now.toISOString() }));
+        
+        // Hapus lock setelah absen pulang
+        localStorage.removeItem('sbu_absen_confirmed');
       }
       
     } else { 
       alert('❌ Gagal: ' + result.message); 
     }
-  } catch (e) { alert(' Koneksi gagal: ' + e.message); }
+  } catch (e) { alert('❌ Koneksi gagal: ' + e.message); }
 }
 
 // ===== SUBMIT LAINNYA =====
@@ -448,8 +541,8 @@ async function submitPatroliFinal() {
   if (result.status === 'success') {
     alert('✅ ' + result.message);
     patroliData = { foto1: '', foto2: '' }; document.getElementById('patroliLokasi').value = ''; document.getElementById('patroliCatatan').value = '';
-    resetBtn('btnPatroli1', '📷 Foto 1'); resetBtn('btnPatroli2', '📷 Foto 2');
-  } else { alert(' Gagal: ' + result.message); }
+    resetBtn('btnPatroli1', '📷 Foto 1'); resetBtn('btnPatroli2', ' Foto 2');
+  } else { alert('❌ Gagal: ' + result.message); }
   showLoading(false);
 }
 
@@ -465,7 +558,7 @@ async function submitKejadianFinal() {
   if (result.status === 'success') {
     alert('✅ ' + result.message);
     kejadianData = { foto1: '', foto2: '' }; document.getElementById('kejadianJenis').value = ''; document.getElementById('kejadianLokasi').value = ''; document.getElementById('kejadianKronologi').value = '';
-    resetBtn('btnKejadian1', '📷 Bukti 1'); resetBtn('btnKejadian2', '📷 Bukti 2');
+    resetBtn('btnKejadian1', '📷 Bukti 1'); resetBtn('btnKejadian2', ' Bukti 2');
   } else { alert('❌ Gagal: ' + result.message); }
   showLoading(false);
 }
@@ -523,11 +616,11 @@ async function loadPengajuanUser() {
     else {
       listEl.innerHTML = allPengajuan.map(p => {
         let statusColor = p.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : p.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '❌';
+        let statusIcon = p.status === 'PENDING' ? '' : p.status === 'APPROVED' ? '✅' : '❌';
         if (p.type === 'IJIN') {
           return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ${p.jenis}</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span></div><p class="text-[10px] text-slate-600">📅 ${p.tanggal_mulai} s/d ${p.tanggal_selesai}</p><p class="text-[10px] text-slate-500 mt-1">💬 ${p.keterangan || '-'}</p></div>`;
         } else {
-          return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span></div><p class="text-[10px] text-slate-600">📅 ${p.tanggal} | ${p.shift_lama} → ${p.shift_baru}</p><p class="text-[10px] text-slate-500 mt-1"> Pengganti: ${p.pengganti}</p></div>`;
+          return `<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${statusIcon} ${p.status}</span></div><p class="text-[10px] text-slate-600">📅 ${p.tanggal} | ${p.shift_lama} → ${p.shift_baru}</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ${p.pengganti}</p></div>`;
         }
       }).join('');
     }
@@ -680,6 +773,7 @@ function setTab(t, btnElement) {
 function kembaliKePilihLokasi() {
   if (confirm('Yakin ingin mengganti lokasi kerja?\n\nAnda akan kembali ke halaman pilih lokasi.')) {
     localStorage.removeItem('sbu_lokasi');
+    localStorage.removeItem('sbu_absen_confirmed');
     selectedLokasi = null;
     document.getElementById('screen-main').classList.add('hidden');
     document.getElementById('screen-main').classList.remove('flex');
@@ -691,7 +785,12 @@ function kembaliKePilihLokasi() {
   }
 }
 
-function doLogout() { if(confirm('Yakin ingin keluar?')) { localStorage.clear(); location.reload(); } }
+function doLogout() { 
+  if(confirm('Yakin ingin keluar?')) { 
+    localStorage.clear(); 
+    location.reload(); 
+  } 
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   startGPS(); startClock();
