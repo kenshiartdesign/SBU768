@@ -162,7 +162,6 @@ async function checkAbsenStatus() {
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
   
-  // Cek optimistic lock dari localStorage
   const confirmedStatus = JSON.parse(localStorage.getItem('sbu_absen_confirmed') || 'null');
   
   try {
@@ -170,21 +169,17 @@ async function checkAbsenStatus() {
     const res = await fetch(url);
     const result = await res.json();
     
-    console.log('[checkAbsenStatus] Server response:', result);
-    console.log('[checkAbsenStatus] Confirmed status:', confirmedStatus);
-    
     if (result.status === 'success') {
-      // Jika ada optimistic lock dan belum expired (12 jam)
+      // Jika ada optimistic lock dan belum expired (5 JAM)
       if (confirmedStatus && confirmedStatus.last_action) {
         const lockTime = new Date(confirmedStatus.timestamp);
         const now = new Date();
         const hoursDiff = (now - lockTime) / (1000 * 60 * 60);
         
-        if (hoursDiff < 12) {
+        if (hoursDiff < 5) { // UBAH DARI 12 MENJADI 5
           console.log('[checkAbsenStatus] Menggunakan optimistic lock:', confirmedStatus.last_action);
           
           if (confirmedStatus.last_action === 'masuk') {
-            // Kunci tombol masuk, aktifkan tombol pulang
             btnMasuk.disabled = true;
             btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
             btnMasuk.onclick = null;
@@ -194,9 +189,8 @@ async function checkAbsenStatus() {
             btnPulang.onclick = () => openCamera('pulang');
             
             if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold mt-2 text-green-600'; }
-            return; // Jangan lanjut ke logika server
+            return; 
           } else if (confirmedStatus.last_action === 'pulang') {
-            // Kunci kedua tombol
             btnMasuk.disabled = true;
             btnMasuk.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
             btnMasuk.onclick = null;
@@ -206,33 +200,26 @@ async function checkAbsenStatus() {
             btnPulang.onclick = null;
             
             if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
-            return; // Jangan lanjut ke logika server
+            return; 
           }
         } else {
-          // Lock expired, hapus
           localStorage.removeItem('sbu_absen_confirmed');
-          console.log('[checkAbsenStatus] Optimistic lock expired');
         }
       }
       
-      // Fallback ke logika server jika tidak ada lock
+      // Fallback ke logika server
       if (!result.last_masuk && !result.last_pulang) {
-        console.log('[checkAbsenStatus] Data server kosong. Reset tombol...');
         localStorage.removeItem('sbu_absen_confirmed');
-        
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
         btnMasuk.onclick = () => openCamera('masuk');
-        
         btnPulang.disabled = true;
         btnPulang.className = 'h-24 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 cursor-not-allowed';
         btnPulang.onclick = null;
-        
         if (pesanEl) { pesanEl.innerText = 'Silakan absen masuk.'; pesanEl.className = 'text-sm font-bold mt-2 text-amber-600'; }
         return;
       }
 
-      // Logika normal dari server
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-24 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-2';
@@ -463,7 +450,7 @@ function resetBtn(id, text) {
   btn.innerText = text; btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== SUBMIT ABSEN (DENGAN OPTIMISTIC LOCK) =====
+// ===== SUBMIT ABSEN (DENGAN OPTIMISTIC LOCK 5 JAM) =====
 async function submitAbsenToGAS(tipe, fotoBase64) {
   const jarak = haversine(gps.lat, gps.lng, selectedLokasi.latitude, selectedLokasi.longitude);
   const now = new Date();
@@ -484,15 +471,14 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
     if (result.status === 'success') { 
       alert(`✅ Absen ${tipe.toUpperCase()} berhasil!\nJarak: ${result.jarak}m`); 
       
-      // SET OPTIMISTIC LOCK (Tombol persisten 12 jam)
+      // SET OPTIMISTIC LOCK (Tombol persisten 5 JAM)
       const lockData = {
         last_action: tipe,
         timestamp: now.toISOString(),
-        expires_at: new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString()
+        expires_at: new Date(now.getTime() + 5 * 60 * 60 * 1000).toISOString() // UBAH DARI 12 MENJADI 5
       };
       localStorage.setItem('sbu_absen_confirmed', JSON.stringify(lockData));
       
-      // Update UI langsung
       const btnMasuk = document.getElementById('btnAbsenMasuk');
       const btnPulang = document.getElementById('btnAbsenPulang');
       const pesanEl = document.getElementById('absenPesan');
@@ -519,7 +505,6 @@ async function submitAbsenToGAS(tipe, fotoBase64) {
         
         if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold mt-2 text-red-600'; }
         
-        // Hapus lock setelah absen pulang
         localStorage.removeItem('sbu_absen_confirmed');
       }
       
