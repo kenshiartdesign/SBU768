@@ -79,10 +79,10 @@
     
     <div class="flex-1 overflow-y-auto p-4 pb-[90px]">
       
-      <!-- TAB ABSEN (NEW STRUCTURE) -->
+      <!-- TAB ABSEN -->
       <div id="tab-absen" class="space-y-3">
         
-        <!-- Header: Status GPS + Jam Digital -->
+        <!-- Header: Status GPS + Jam Digital Modern -->
         <div class="bg-white rounded-2xl p-4 shadow-sm">
           <div class="flex justify-between items-start mb-3">
             <div class="flex-1">
@@ -92,11 +92,11 @@
               </p>
               <p id="absenPesan" class="text-sm font-bold text-amber-600 mt-1"></p>
             </div>
-            <!-- Jam Digital & Tanggal -->
-            <div class="text-right ml-3">
-              <p id="jamDigitalMini" class="text-2xl font-extrabold font-mono text-slate-800 leading-tight">00:00</p>
-              <p id="hariPasaranMini" class="text-[10px] font-bold text-amber-600 mt-0.5">-</p>
-              <p id="tanggalMini" class="text-[10px] text-slate-500">-</p>
+            <!-- Jam Digital Modern -->
+            <div class="text-right ml-3 bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl px-4 py-3 shadow-lg min-w-[140px]">
+              <p id="jamDigitalMini" class="text-3xl font-extrabold font-mono text-white leading-tight tracking-wider">00:00:00</p>
+              <p id="hariPasaranMini" class="text-xs font-bold text-amber-400 mt-1">-</p>
+              <p id="tanggalMini" class="text-[10px] text-slate-300">-</p>
             </div>
           </div>
         </div>
@@ -135,8 +135,8 @@
           <input id="patroliLokasi" placeholder="Lokasi patroli (misal: Pos Utara Lantai 2)" class="w-full h-10 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-2">
           <textarea id="patroliCatatan" placeholder="Keterangan patroli..." class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
           <div class="grid grid-cols-2 gap-2 mb-3">
-            <button onclick="openCamera('patroli1')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli1">📷 Foto 1</button>
-            <button onclick="openCamera('patroli2')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2"> Foto 2</button>
+            <button onclick="openCamera('patroli1')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli1"> Foto 1</button>
+            <button onclick="openCamera('patroli2')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-xs font-bold text-slate-500" id="btnPatroli2">📷 Foto 2</button>
           </div>
           <button onclick="submitPatroliFinal()" class="w-full h-11 bg-amber-400 text-slate-900 rounded-xl font-bold shadow-md active:scale-95 transition text-sm">
             <i class="fa-solid fa-paper-plane mr-1"></i> KIRIM LAPORAN PATROLI
@@ -163,7 +163,7 @@
           <textarea id="kejadianKronologi" placeholder="Kronologi kejadian..." class="w-full h-20 bg-slate-50 rounded-xl p-3 text-sm border border-slate-200 outline-none mb-3"></textarea>
           <div class="grid grid-cols-2 gap-2 mb-3">
             <button onclick="openCamera('kejadian1')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-red-300 flex flex-col items-center justify-center text-xs font-bold text-red-500" id="btnKejadian1">📷 Bukti 1</button>
-            <button onclick="openCamera('kejadian2')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-red-300 flex flex-col items-center justify-center text-xs font-bold text-red-500" id="btnKejadian2">📷 Bukti 2</button>
+            <button onclick="openCamera('kejadian2')" class="h-16 bg-slate-100 rounded-xl border-2 border-dashed border-red-300 flex flex-col items-center justify-center text-xs font-bold text-red-500" id="btnKejadian2"> Bukti 2</button>
           </div>
           <button onclick="submitKejadianFinal()" class="w-full h-11 bg-red-600 text-white rounded-xl font-bold shadow-md active:scale-95 transition text-sm">
             <i class="fa-solid fa-paper-plane mr-1"></i> KIRIM LAPORAN KEJADIAN
@@ -270,7 +270,7 @@
             <p id="infoAlpha" class="text-xs text-slate-500 italic mb-4 text-center">* Alpha dihitung otomatis di akhir bulan</p>
             <div class="mb-4">
               <p class="font-bold text-base mb-3 flex items-center gap-2">
-                <span class="text-lg"></span> Kalender Absensi
+                <span class="text-lg">📅</span> Kalender Absensi
               </p>
               <div class="grid grid-cols-7 gap-1 mb-2">
                 <div class="text-center text-xs font-bold text-slate-400 py-1">M</div>
