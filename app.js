@@ -738,6 +738,59 @@ async function loadSlipGaji() {
   }
 }
 
+// ===== KONVERSI URL GOOGLE DRIVE KE FORMAT EMBED =====
+function convertDriveUrl(url) {
+  if (!url) return '';
+  
+  // Jika sudah format thumbnail/uc, kembalikan apa adanya
+  if (url.includes('drive.google.com/uc') || url.includes('lh3.googleusercontent.com')) {
+    return url;
+  }
+  
+  // Extract File ID dari berbagai format URL Google Drive
+  let fileId = '';
+  
+  // Format: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1) fileId = match1[1];
+  
+  // Format: https://drive.google.com/open?id=FILE_ID
+  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
+  if (match2) fileId = match2[1];
+  
+  // Format: https://drive.google.com/uc?id=FILE_ID
+  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
+  if (match3) fileId = match3[1];
+  
+  // Jika tidak ada File ID, kembalikan URL asli
+  if (!fileId) return url;
+  
+  // Konversi ke format yang bisa di-embed sebagai image
+  return 'https://lh3.googleusercontent.com/d/' + fileId;
+}
+
+// ===== MODAL ZOOM FOTO =====
+function openZoomModal(imageUrl, caption) {
+  const modal = document.getElementById('zoomModal');
+  const img = document.getElementById('zoomImage');
+  const cap = document.getElementById('zoomCaption');
+  
+  // Konversi URL dulu
+  img.src = convertDriveUrl(imageUrl);
+  cap.innerText = caption || '';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeZoomModal() {
+  const modal = document.getElementById('zoomModal');
+  const img = document.getElementById('zoomImage');
+  
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  img.src = '';
+}
+
 // ===== REKAP PATROLI (SEMUA USER + THUMBNAIL + ZOOM) =====
 async function loadRekapPatroli() {
   const filterBulan = document.getElementById('filterBulanPatroli').value;
@@ -769,8 +822,12 @@ async function loadRekapPatroli() {
       const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
       const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       
-      const foto1Thumb = p.foto1 ? `<img src="${p.foto1}" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '<div class="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-[10px]">No Foto</div>';
-      const foto2Thumb = p.foto2 ? `<img src="${p.foto2}" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      // Konversi URL foto
+      const foto1Url = convertDriveUrl(p.foto1);
+      const foto2Url = convertDriveUrl(p.foto2);
+      
+      const foto1Thumb = foto1Url ? `<img src="${foto1Url}" onerror="this.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      const foto2Thumb = foto2Url ? `<img src="${foto2Url}" onerror="this.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
       
       return `
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -780,9 +837,9 @@ async function loadRekapPatroli() {
               <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
             </div>
           </div>
-          <p class="text-[10px] text-slate-600 mb-1">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-600 mb-1"> ${p.nama_lokasi || '-'}</p>
           <p class="text-[10px] text-slate-500 mb-2"> ${p.keterangan || 'Tidak ada keterangan'}</p>
-          ${(p.foto1 || p.foto2) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
+          ${(foto1Thumb || foto2Thumb) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
         </div>
       `;
     }).join('');
@@ -827,21 +884,25 @@ async function loadRekapKejadian() {
       const statusColor = k.status === 'OPEN' ? 'bg-amber-100 text-amber-700' : 
                           k.status === 'CLOSED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
       
-      const foto1Thumb = k.foto1 ? `<img src="${k.foto1}" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
-      const foto2Thumb = k.foto2 ? `<img src="${k.foto2}" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      // Konversi URL foto
+      const foto1Url = convertDriveUrl(k.foto1);
+      const foto2Url = convertDriveUrl(k.foto2);
+      
+      const foto1Thumb = foto1Url ? `<img src="${foto1Url}" onerror="this.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      const foto2Thumb = foto2Url ? `<img src="${foto2Url}" onerror="this.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
       
       return `
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
               <p class="font-bold text-xs text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> ${k.jenis_kejadian || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} •  ${jamStr}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
             </div>
             <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
           </div>
-          <p class="text-[10px] text-slate-600 mb-1">📍 ${k.lokasi_kejadian || '-'}</p>
+          <p class="text-[10px] text-slate-600 mb-1"> ${k.lokasi_kejadian || '-'}</p>
           <p class="text-[10px] text-slate-500 mb-2"> ${k.kronologi || 'Tidak ada kronologi'}</p>
-          ${(k.foto1 || k.foto2) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
+          ${(foto1Thumb || foto2Thumb) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
         </div>
       `;
     }).join('');
