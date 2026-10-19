@@ -13,6 +13,40 @@ let kejadianData = { foto1: '', foto2: '' };
 let ijinData = { foto: '' };
 let videoStream = null;
 
+// ===== TOAST NOTIFICATION =====
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  let bgClass = 'bg-slate-800 text-white';
+  let icon = '<i class="fa-solid fa-circle-info"></i>';
+  
+  if (type === 'success') {
+    bgClass = 'bg-green-600 text-white';
+    icon = '<i class="fa-solid fa-circle-check"></i>';
+  } else if (type === 'error') {
+    bgClass = 'bg-red-600 text-white';
+    icon = '<i class="fa-solid fa-circle-xmark"></i>';
+  } else if (type === 'warning') {
+    bgClass = 'bg-amber-500 text-white';
+    icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+  }
+
+  toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm font-bold transform transition-all duration-300 translate-y-10 opacity-0 pointer-events-auto`;
+  toast.innerHTML = `${icon} <span class="flex-1">${message}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.remove('translate-y-10', 'opacity-0');
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.add('translate-y-10', 'opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
 // ===== LOADING =====
 function showLoading(show) {
   let overlay = document.getElementById('loadingOverlay');
@@ -59,7 +93,7 @@ function updateAbsenUI() {
   }
 }
 
-// ===== JAM & TANGGAL (Screen Pilih Lokasi) =====
+// ===== JAM & TANGGAL =====
 function updateJamDigital() {
   const now = new Date();
   const jam = String(now.getHours()).padStart(2, '0');
@@ -69,25 +103,15 @@ function updateJamDigital() {
   if (jamEl) jamEl.innerText = jam + ':' + menit + ':' + detik;
 }
 
-// ===== PENANGGALAN JAWA (AKURAT - 17 AGUSTUS 1945 = JUMAT LEGI) =====
 function hitungHariPasaran() {
   const pasaran = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
-  
-  // Referensi: 17 Agustus 1945 = Jumat Legi
-  const referensi = new Date(1945, 7, 17); // Bulan 7 = Agustus (0-indexed)
+  const referensi = new Date(1945, 7, 17);
   const sekarang = new Date();
-  
-  // Reset waktu ke midnight untuk perhitungan hari yang akurat
   referensi.setHours(0, 0, 0, 0);
   sekarang.setHours(0, 0, 0, 0);
-  
-  // Hitung selisih hari
   const selisihMs = sekarang.getTime() - referensi.getTime();
   const selisihHari = Math.round(selisihMs / (1000 * 60 * 60 * 24));
-  
-  // Legi = index 0, siklus 5 hari
   const indexPasaran = ((selisihHari % 5) + 5) % 5;
-  
   return pasaran[indexPasaran];
 }
 
@@ -113,28 +137,23 @@ function startClock() {
 // ===== JAM DIGITAL MODERN (Header Absen) =====
 function updateJamMini() {
   const now = new Date();
-  
-  // Jam dengan detik berjalan
   const jam = String(now.getHours()).padStart(2, '0');
   const menit = String(now.getMinutes()).padStart(2, '0');
   const detik = String(now.getSeconds()).padStart(2, '0');
   const jamEl = document.getElementById('jamDigitalMini');
   if (jamEl) jamEl.innerText = jam + ':' + menit + ':' + detik;
   
-  // Hari + Pasaran Jawa
   const hariMasehi = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const hariNama = hariMasehi[now.getDay()];
   const pasaran = hitungHariPasaran();
   const hariPasaranEl = document.getElementById('hariPasaranMini');
   if (hariPasaranEl) hariPasaranEl.innerText = hariNama + ' ' + pasaran;
   
-  // Tanggal Lengkap
   const bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const tanggalEl = document.getElementById('tanggalMini');
   if (tanggalEl) tanggalEl.innerText = now.getDate() + ' ' + bulan[now.getMonth()] + ' ' + now.getFullYear();
 }
 
-// Update jam mini setiap detik
 setInterval(updateJamMini, 1000);
 updateJamMini();
 
@@ -153,12 +172,13 @@ async function doLogin() {
       document.getElementById('screen-login').classList.add('hidden');
       await loadLokasi();
     } else {
+      showToast(result.message, 'error');
       const err = document.getElementById('loginError');
       err.textContent = result.message;
       err.classList.remove('hidden');
     }
   } catch (e) {
-    alert('Koneksi gagal: ' + e.message);
+    showToast('Koneksi gagal: ' + e.message, 'error');
   } finally {
     showLoading(false);
   }
@@ -191,9 +211,32 @@ async function loadLokasi() {
       list.innerHTML = '<p class="text-center text-slate-500 text-sm w-full">Tidak ada lokasi aktif.</p>';
     }
   } catch (e) {
-    alert('Gagal memuat lokasi: ' + e.message);
+    showToast('Gagal memuat lokasi: ' + e.message, 'error');
   } finally {
     showLoading(false);
+  }
+}
+
+// ===== UPDATE AVATAR =====
+function updateAvatarDisplay(fotoUrl, nama, elementIdImg, elementIdText) {
+  const imgEl = document.getElementById(elementIdImg);
+  const textEl = document.getElementById(elementIdText);
+  
+  if (fotoUrl && fotoUrl !== '' && fotoUrl !== 'null') {
+    const thumbUrl = getThumbnailUrl(fotoUrl);
+    imgEl.src = thumbUrl;
+    imgEl.classList.remove('hidden');
+    textEl.classList.add('hidden');
+    
+    imgEl.onerror = function() {
+      imgEl.classList.add('hidden');
+      textEl.classList.remove('hidden');
+      textEl.innerText = String(nama || '-').substring(0, 2).toUpperCase();
+    };
+  } else {
+    imgEl.classList.add('hidden');
+    textEl.classList.remove('hidden');
+    textEl.innerText = String(nama || '-').substring(0, 2).toUpperCase();
   }
 }
 
@@ -204,13 +247,11 @@ async function showMainScreen() {
   sm.classList.add('flex');
   
   document.getElementById('namaTop').innerText = currentUser.nama;
-  document.getElementById('lokasiTop').innerText = selectedLokasi.nama_lokasi;
+  document.getElementById('lokasiTop').querySelector('span:last-child').innerText = selectedLokasi.nama_lokasi;
   document.getElementById('infoLokasiAbsen').innerText = selectedLokasi.nama_lokasi;
   
-  // Update avatar di header (foto atau inisial)
   updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'avatarTopImg', 'avatarTopText');
   
-  // Update profil
   document.getElementById('profilNamaHeader').innerText = currentUser.nama;
   document.getElementById('profilRoleHeader').innerText = currentUser.role.toUpperCase();
   document.getElementById('profilNama').innerText = currentUser.nama;
@@ -222,7 +263,6 @@ async function showMainScreen() {
   document.getElementById('profilEmail').innerText = currentUser.email || '-';
   document.getElementById('profilLokasi').innerText = selectedLokasi.nama_lokasi;
   
-  // Update avatar di halaman profil
   updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
   
   updateAbsenUI();
@@ -237,7 +277,7 @@ async function showMainScreen() {
     btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnMasuk.onclick = null;
     btnPulang.disabled = false;
-    btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
+    btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
     btnPulang.onclick = () => openCamera('pulang');
     if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold text-green-600'; }
   } else if (savedStatus && savedStatus.last_action === 'pulang') {
@@ -252,10 +292,9 @@ async function showMainScreen() {
     await checkAbsenStatus();
   }
   
-  // Load data di background
   loadSlipGaji();
   loadPengajuanUser();
-  loadStatistikProfil(); // Load statistik
+  loadStatistikProfil();
 }
 
 async function checkAbsenStatus() {
@@ -272,7 +311,7 @@ async function checkAbsenStatus() {
     if (result.status === 'success') {
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
-        btnMasuk.className = 'h-20 bg-slate-900 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
+        btnMasuk.className = 'h-20 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
         btnMasuk.onclick = () => openCamera('masuk');
       } else {
         btnMasuk.disabled = true;
@@ -282,7 +321,7 @@ async function checkAbsenStatus() {
       
       if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
-        btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
+        btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
         btnPulang.onclick = () => openCamera('pulang');
       } else {
         btnPulang.disabled = true;
@@ -325,7 +364,7 @@ async function openCameraAbsen(action) {
     modal.classList.add('flex');
   } catch (err) {
     console.error('openCameraAbsen Error:', err);
-    alert('Gagal mengakses kamera depan: ' + err.message);
+    showToast('Gagal mengakses kamera depan', 'error');
   }
 }
 
@@ -379,7 +418,7 @@ async function captureSelfie() {
   
   if (gps) {
     ctx.fillStyle = '#9ca3af'; ctx.font = '13px monospace';
-    ctx.fillText('📍 ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), canvas.width / 2, canvas.height - watermarkHeight + 140);
+    ctx.fillText(' ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), canvas.width / 2, canvas.height - watermarkHeight + 140);
   }
   
   capturedBase64 = canvas.toDataURL('image/jpeg', 0.7);
@@ -394,7 +433,7 @@ async function captureSelfie() {
     btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnMasuk.onclick = null;
     btnPulang.disabled = false;
-    btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
+    btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
     btnPulang.onclick = () => openCamera('pulang');
     if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold text-green-600'; }
   } else if (currentCameraAction === 'pulang') {
@@ -431,18 +470,102 @@ async function captureSelfie() {
     const result = await response.json();
     
     if (result.status === 'success') {
-      alert('✅ Absen ' + currentCameraAction.toUpperCase() + ' berhasil!\nJarak: ' + result.jarak + 'm');
+      showToast('Absen ' + currentCameraAction.toUpperCase() + ' berhasil! (' + result.jarak + 'm)', 'success');
     } else {
-      alert('❌ Gagal: ' + result.message);
+      showToast('Gagal: ' + result.message, 'error');
       await checkAbsenStatus();
     }
   } catch (e) {
     console.error('Error kirim absen:', e);
-    alert('❌ Koneksi gagal: ' + e.message);
+    showToast('Koneksi gagal: ' + e.message, 'error');
     await checkAbsenStatus();
   } finally {
     showLoading(false);
   }
+}
+
+// ===== URL HELPERS =====
+function getThumbnailUrl(url) {
+  if (!url) return '';
+  if (url.includes('lh3.googleusercontent.com')) return url;
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match) return 'https://lh3.googleusercontent.com/d/' + match[1];
+  return url;
+}
+
+function getZoomFormats(url) {
+  if (!url) return null;
+  if (url.includes('lh3.googleusercontent.com')) return [url];
+  let fileId = '';
+  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1) fileId = match1[1];
+  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
+  if (match2) fileId = match2[1];
+  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
+  if (match3) fileId = match3[1];
+  if (!fileId) return [url];
+  return [
+    'https://lh3.googleusercontent.com/d/' + fileId,
+    'https://drive.google.com/uc?export=view&id=' + fileId,
+    'https://drive.google.com/uc?id=' + fileId
+  ];
+}
+
+// ===== MODAL ZOOM =====
+function openZoomModal(imageUrl, caption) {
+  const modal = document.getElementById('zoomModal');
+  const img = document.getElementById('zoomImage');
+  const loading = document.getElementById('zoomLoading');
+  const cap = document.getElementById('zoomCaption');
+  
+  const formats = getZoomFormats(imageUrl);
+  if (!formats || formats.length === 0) {
+    showToast('URL foto tidak valid', 'error');
+    return;
+  }
+  
+  if (loading) loading.classList.remove('hidden');
+  img.style.display = 'none';
+  cap.innerText = '';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  
+  let formatIndex = 0;
+  
+  function tryNextFormat() {
+    if (formatIndex >= formats.length) {
+      if (loading) loading.classList.add('hidden');
+      cap.innerText = '❌ Gagal memuat foto';
+      return;
+    }
+    
+    const testUrl = formats[formatIndex];
+    
+    img.onload = function() {
+      if (loading) loading.classList.add('hidden');
+      img.style.display = 'block';
+      cap.innerText = caption || '';
+    };
+    
+    img.onerror = function() {
+      formatIndex++;
+      tryNextFormat();
+    };
+    
+    img.src = testUrl;
+  }
+  
+  tryNextFormat();
+}
+
+function closeZoomModal() {
+  const modal = document.getElementById('zoomModal');
+  const img = document.getElementById('zoomImage');
+  
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  img.src = '';
+  img.style.display = 'none';
 }
 
 // ===== KAMERA MODAL (PATROLI/KEJADIAN/IJIN) =====
@@ -528,7 +651,7 @@ function closeCamera() {
 
 async function sendPhoto() {
   if (!capturedBase64) {
-    alert('Error: Tidak ada foto!');
+    showToast('Tidak ada foto!', 'error');
     return;
   }
   closeCamera();
@@ -564,9 +687,9 @@ function resetBtn(id, text) {
 
 // ===== SUBMIT PATROLI =====
 async function submitPatroliFinal() {
-  if (!patroliData.foto1 || !patroliData.foto2) return alert('Harap ambil kedua foto patroli!');
+  if (!patroliData.foto1 || !patroliData.foto2) return showToast('Harap ambil kedua foto patroli!', 'warning');
   const lokasi = document.getElementById('patroliLokasi').value.trim();
-  if (!lokasi) return alert('Harap isi lokasi patroli!');
+  if (!lokasi) return showToast('Harap isi lokasi patroli!', 'warning');
   showLoading(true);
   const payload = {
     action: 'patroli',
@@ -585,24 +708,24 @@ async function submitPatroliFinal() {
   const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
   const result = await res.json();
   if (result.status === 'success') {
-    alert('✅ ' + result.message);
+    showToast('Laporan patroli berhasil dikirim!', 'success');
     patroliData = { foto1: '', foto2: '' };
     document.getElementById('patroliLokasi').value = '';
     document.getElementById('patroliCatatan').value = '';
     resetBtn('btnPatroli1', '📷 Foto 1');
     resetBtn('btnPatroli2', '📷 Foto 2');
   } else {
-    alert('❌ Gagal: ' + result.message);
+    showToast('Gagal: ' + result.message, 'error');
   }
   showLoading(false);
 }
 
 // ===== SUBMIT KEJADIAN =====
 async function submitKejadianFinal() {
-  if (!kejadianData.foto1 || !kejadianData.foto2) return alert('Harap ambil kedua bukti foto!');
+  if (!kejadianData.foto1 || !kejadianData.foto2) return showToast('Harap ambil kedua bukti foto!', 'warning');
   const jenis = document.getElementById('kejadianJenis').value;
   const lokasi = document.getElementById('kejadianLokasi').value.trim();
-  if (!jenis || !lokasi) return alert('Harap lengkapi jenis dan lokasi kejadian!');
+  if (!jenis || !lokasi) return showToast('Harap lengkapi jenis dan lokasi kejadian!', 'warning');
   showLoading(true);
   const payload = {
     action: 'kejadian',
@@ -620,7 +743,7 @@ async function submitKejadianFinal() {
   const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
   const result = await res.json();
   if (result.status === 'success') {
-    alert('✅ ' + result.message);
+    showToast('Laporan kejadian berhasil dikirim!', 'success');
     kejadianData = { foto1: '', foto2: '' };
     document.getElementById('kejadianJenis').value = '';
     document.getElementById('kejadianLokasi').value = '';
@@ -628,7 +751,7 @@ async function submitKejadianFinal() {
     resetBtn('btnKejadian1', '📷 Bukti 1');
     resetBtn('btnKejadian2', ' Bukti 2');
   } else {
-    alert('❌ Gagal: ' + result.message);
+    showToast('Gagal: ' + result.message, 'error');
   }
   showLoading(false);
 }
@@ -637,7 +760,7 @@ async function submitKejadianFinal() {
 async function submitIjinFinal() {
   const mulai = document.getElementById('ijinMulai').value;
   const selesai = document.getElementById('ijinSelesai').value;
-  if (!mulai || !selesai) return alert('Harap isi tanggal mulai dan selesai!');
+  if (!mulai || !selesai) return showToast('Harap isi tanggal mulai dan selesai!', 'warning');
   showLoading(true);
   const payload = {
     action: 'ijinSakit',
@@ -653,13 +776,13 @@ async function submitIjinFinal() {
   const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
   const result = await res.json();
   if (result.status === 'success') {
-    alert('✅ ' + result.message);
+    showToast('Pengajuan ijin/sakit berhasil dikirim!', 'success');
     ijinData = { foto: '' };
     document.getElementById('ijinKet').value = '';
     resetBtn('btnIjin', '📷 Upload Bukti (Surat Dokter/Undangan)');
     loadPengajuanUser();
   } else {
-    alert('❌ Gagal: ' + result.message);
+    showToast('Gagal: ' + result.message, 'error');
   }
   showLoading(false);
 }
@@ -672,8 +795,8 @@ async function submitShiftFinal() {
   const penggantiUser = document.getElementById('shiftPenggantiUser').value.trim();
   const penggantiNama = document.getElementById('shiftPenggantiNama').value.trim();
   const alasan = document.getElementById('shiftAlasan').value.trim();
-  if (!tanggal || !penggantiUser || !penggantiNama || !alasan) return alert('Harap lengkapi semua data!');
-  if (shiftLama === shiftBaru) return alert('Shift lama dan baru tidak boleh sama!');
+  if (!tanggal || !penggantiUser || !penggantiNama || !alasan) return showToast('Harap lengkapi semua data!', 'warning');
+  if (shiftLama === shiftBaru) return showToast('Shift lama dan baru tidak boleh sama!', 'warning');
   showLoading(true);
   const payload = {
     action: 'tukarShift',
@@ -689,16 +812,86 @@ async function submitShiftFinal() {
   const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
   const result = await res.json();
   if (result.status === 'success') {
-    alert('✅ ' + result.message + '\n\nMenunggu approval admin.');
+    showToast('Pengajuan tukar shift berhasil! Menunggu approval admin.', 'success');
     document.getElementById('shiftTanggal').value = '';
     document.getElementById('shiftPenggantiUser').value = '';
     document.getElementById('shiftPenggantiNama').value = '';
     document.getElementById('shiftAlasan').value = '';
     loadPengajuanUser();
   } else {
-    alert('❌ Gagal: ' + result.message);
+    showToast('Gagal: ' + result.message, 'error');
   }
   showLoading(false);
+}
+
+// ===== HANDLE FOTO PROFIL =====
+async function handleFotoProfilChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  showLoading(true);
+  
+  try {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async function(e) {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = async function() {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxSize = 400;
+        
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        
+        const payload = {
+          action: 'uploadFotoProfil',
+          username: currentUser.username,
+          foto_base64: compressedBase64
+        };
+        
+        const response = await fetch(CONFIG.GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          currentUser.foto_url = result.foto_url;
+          localStorage.setItem('sbu_user', JSON.stringify(currentUser));
+          updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'avatarTopImg', 'avatarTopText');
+          updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
+          showToast('Foto profil berhasil diupdate!', 'success');
+        } else {
+          showToast('Gagal: ' + result.message, 'error');
+        }
+        
+        showLoading(false);
+      };
+    };
+  } catch (err) {
+    console.error('Error upload foto profil:', err);
+    showToast('Gagal upload foto: ' + err.message, 'error');
+    showLoading(false);
+  }
+  
+  event.target.value = '';
 }
 
 // ===== RIWAYAT PENGAJUAN =====
@@ -715,7 +908,7 @@ async function loadPengajuanUser() {
     if (data.shift && data.shift.length > 0) data.shift.forEach(p => allPengajuan.push({ type: 'SHIFT', ...p }));
     allPengajuan.reverse();
     if (allPengajuan.length === 0) {
-      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Belum ada pengajuan.</p>';
+      showEmptyState('listPengajuan', 'fa-solid fa-inbox', 'Belum Ada Pengajuan', 'Pengajuan Anda akan muncul di sini');
     } else {
       listEl.innerHTML = allPengajuan.map(p => {
         let statusColor = p.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : p.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
@@ -723,7 +916,7 @@ async function loadPengajuanUser() {
         if (p.type === 'IJIN') {
           return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
         } else {
-          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
+          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1"> Pengganti: ' + p.pengganti + '</p></div>';
         }
       }).join('');
     }
@@ -741,366 +934,70 @@ async function loadSlipGaji() {
     if (result.status === 'success' && result.data.length > 0) {
       list.innerHTML = result.data.map(s => '<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200"><div><p class="font-bold text-sm">' + s.periode + '</p><p class="text-[10px] text-slate-500">Total: Rp ' + Number(s.total).toLocaleString('id-ID') + '</p></div><a href="' + s.file_url + '" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">LIHAT</a></div>').join('');
     } else {
-      list.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Belum ada slip gaji.</p>';
+      showEmptyState('listSlipGaji', 'fa-solid fa-money-bill-wave', 'Belum Ada Slip Gaji', 'Slip gaji Anda akan muncul di sini');
     }
   } catch (e) {
     console.error(e);
   }
 }
 
-// ===== KONVERSI URL GOOGLE DRIVE KE FORMAT EMBED =====
-function convertDriveUrl(url) {
-  if (!url) return '';
-  
-  // Jika sudah format yang bisa di-embed, kembalikan
-  if (url.includes('lh3.googleusercontent.com') || url.includes('drive.google.com/uc')) {
-    return url;
-  }
-  
-  // Extract File ID dari berbagai format URL Google Drive
-  let fileId = '';
-  
-  // Format: https://drive.google.com/file/d/FILE_ID/view
-  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (match1) fileId = match1[1];
-  
-  // Format: https://drive.google.com/open?id=FILE_ID
-  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
-  if (match2) fileId = match2[1];
-  
-  // Format: https://drive.google.com/uc?id=FILE_ID
-  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
-  if (match3) fileId = match3[1];
-  
-  // Jika tidak ada File ID, kembalikan URL asli
-  if (!fileId) return url;
-  
-  // Coba multiple format untuk memastikan bisa di-load
-  return {
-    original: url,
-    fileId: fileId,
-    formats: [
-      'https://lh3.googleusercontent.com/d/' + fileId,
-      'https://drive.google.com/uc?export=view&id=' + fileId,
-      'https://drive.google.com/uc?id=' + fileId
-    ]
-  };
-}
-
-// ===== MODAL ZOOM FOTO (DENGAN LOADING STATE) =====
-function openZoomModal(imageUrl, caption) {
-  const modal = document.getElementById('zoomModal');
-  const img = document.getElementById('zoomImage');
-  const loading = document.getElementById('zoomLoading');
-  const cap = document.getElementById('zoomCaption');
-  
-  const converted = convertDriveUrl(imageUrl);
-  
-  // Show loading
-  loading.classList.remove('hidden');
-  img.style.display = 'none';
-  cap.innerText = '';
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  
-  let formatIndex = 0;
-  
-  function tryNextFormat() {
-    if (formatIndex >= converted.formats.length) {
-      // Semua format gagal
-      loading.classList.add('hidden');
-      cap.innerText = '❌ Gagal memuat foto';
-      return;
-    }
-    
-    const testUrl = converted.formats[formatIndex];
-    
-    img.onload = function() {
-      loading.classList.add('hidden');
-      img.style.display = 'block';
-      cap.innerText = caption || '';
-    };
-    
-    img.onerror = function() {
-      formatIndex++;
-      tryNextFormat();
-    };
-    
-    img.src = testUrl;
-  }
-  
-  // Mulai coba format pertama
-  tryNextFormat();
-}
-
-function closeZoomModal() {
-  const modal = document.getElementById('zoomModal');
-  const img = document.getElementById('zoomImage');
-  
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-  img.src = '';
-  img.style.display = 'none';
-}
-
-// ===== KONVERSI URL GOOGLE DRIVE KE FORMAT THUMBNAIL =====
-function getThumbnailUrl(url) {
-  if (!url) return '';
-  
-  // Jika sudah format yang bisa di-embed, kembalikan
-  if (url.includes('lh3.googleusercontent.com')) {
-    return url;
-  }
-  
-  // Extract File ID
-  let fileId = '';
-  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (match1) fileId = match1[1];
-  
-  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
-  if (match2) fileId = match2[1];
-  
-  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
-  if (match3) fileId = match3[1];
-  
-  if (!fileId) return url;
-  
-  // Return format thumbnail yang paling reliable
-  return 'https://lh3.googleusercontent.com/d/' + fileId;
-}
-
-// ===== KONVERSI URL GOOGLE DRIVE UNTUK ZOOM (MULTIPLE FALLBACK) =====
-function getZoomFormats(url) {
-  if (!url) return null;
-  
-  if (url.includes('lh3.googleusercontent.com')) {
-    return [url];
-  }
-  
-  let fileId = '';
-  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (match1) fileId = match1[1];
-  
-  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
-  if (match2) fileId = match2[1];
-  
-  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
-  if (match3) fileId = match3[1];
-  
-  if (!fileId) return [url];
-  
-  return [
-    'https://lh3.googleusercontent.com/d/' + fileId,
-    'https://drive.google.com/uc?export=view&id=' + fileId,
-    'https://drive.google.com/uc?id=' + fileId
-  ];
-}
-
-// ===== REKAP PATROLI (SEMUA USER + THUMBNAIL + ZOOM) =====
-async function loadRekapPatroli() {
-  const filterBulan = document.getElementById('filterBulanPatroli').value;
-  const listEl = document.getElementById('listRekapPatroli');
+// ===== STATISTIK PROFIL =====
+async function loadStatistikProfil() {
+  if (!currentUser || !currentUser.username) return;
   
   try {
-    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapPatroli&bulan=' + filterBulan + '&t=' + Date.now());
+    const url = CONFIG.GAS_URL + '?action=getStatistik&username=' + encodeURIComponent(currentUser.username.trim().toLowerCase()) + '&t=' + Date.now();
+    const res = await fetch(url);
     const result = await res.json();
     
-    if (result.status !== 'success') {
-      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Gagal memuat data.</p>';
-      return;
+    if (result.status === 'success' && result.data) {
+      document.getElementById('statAbsenBulan').innerText = result.data.totalAbsen || 0;
+      document.getElementById('statPatroliBulan').innerText = result.data.totalPatroli || 0;
+      document.getElementById('statKejadianBulan').innerText = result.data.totalKejadian || 0;
     }
-    
-    const data = result.data || [];
-    const total = result.total || 0;
-    const bulanIni = result.bulanIni || 0;
-    
-    document.getElementById('statTotalPatroli').innerText = total;
-    document.getElementById('statPatroliBulanIni').innerText = bulanIni;
-    
-    if (data.length === 0) {
-      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Tidak ada data patroli.</p>';
-      return;
-    }
-    
-    listEl.innerHTML = data.map(p => {
-      const tgl = new Date(p.timestamp);
-      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      
-      // Konversi URL untuk thumbnail
-      const foto1ThumbUrl = getThumbnailUrl(p.foto1);
-      const foto2ThumbUrl = getThumbnailUrl(p.foto2);
-      
-      const foto1Html = foto1ThumbUrl ? 
-        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
-      
-      const foto2Html = foto2ThumbUrl ? 
-        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
-      
-      return `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-start mb-2">
-            <div class="flex-1">
-              <p class="font-bold text-xs text-amber-600"><i class="fa-solid fa-route"></i> ${p.lokasi_patroli || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
-            </div>
-          </div>
-          <p class="text-[10px] text-slate-600 mb-1">📍 ${p.nama_lokasi || '-'}</p>
-          <p class="text-[10px] text-slate-500 mb-2">💬 ${p.keterangan || 'Tidak ada keterangan'}</p>
-          ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
-        </div>
-      `;
-    }).join('');
-    
   } catch (e) {
-    console.error('Gagal load rekap patroli:', e);
-    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
+    console.error('Error load statistik:', e);
   }
 }
 
-// ===== REKAP KEJADIAN (SEMUA USER + THUMBNAIL + ZOOM) =====
-async function loadRekapKejadian() {
-  const filterBulan = document.getElementById('filterBulanKejadian').value;
-  const listEl = document.getElementById('listRekapKejadian');
+// ===== SKELETON LOADING =====
+function showSkeleton(containerId, rows = 3) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
   
-  try {
-    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapKejadian&bulan=' + filterBulan + '&t=' + Date.now());
-    const result = await res.json();
-    
-    if (result.status !== 'success') {
-      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Gagal memuat data.</p>';
-      return;
-    }
-    
-    const data = result.data || [];
-    const total = result.total || 0;
-    const bulanIni = result.bulanIni || 0;
-    
-    document.getElementById('statTotalKejadian').innerText = total;
-    document.getElementById('statKejadianBulanIni').innerText = bulanIni;
-    
-    if (data.length === 0) {
-      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Tidak ada data kejadian.</p>';
-      return;
-    }
-    
-    listEl.innerHTML = data.map(k => {
-      const tgl = new Date(k.timestamp);
-      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-      
-      const statusColor = k.status === 'OPEN' ? 'bg-amber-100 text-amber-700' : 
-                          k.status === 'CLOSED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
-      
-      // Konversi URL untuk thumbnail
-      const foto1ThumbUrl = getThumbnailUrl(k.foto1);
-      const foto2ThumbUrl = getThumbnailUrl(k.foto2);
-      
-      const foto1Html = foto1ThumbUrl ? 
-        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
-      
-      const foto2Html = foto2ThumbUrl ? 
-        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
-      
-      return `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-          <div class="flex justify-between items-start mb-2">
-            <div class="flex-1">
-              <p class="font-bold text-xs text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> ${k.jenis_kejadian || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
-            </div>
-            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
+  let skeleton = '';
+  for (let i = 0; i < rows; i++) {
+    skeleton += `
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 animate-pulse">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-lg skeleton"></div>
+          <div class="flex-1">
+            <div class="h-3 skeleton rounded w-3/4 mb-1"></div>
+            <div class="h-2 skeleton rounded w-1/2"></div>
           </div>
-          <p class="text-[10px] text-slate-600 mb-1"> ${k.lokasi_kejadian || '-'}</p>
-          <p class="text-[10px] text-slate-500 mb-2">💬 ${k.kronologi || 'Tidak ada kronologi'}</p>
-          ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
-      `;
-    }).join('');
-    
-  } catch (e) {
-    console.error('Gagal load rekap kejadian:', e);
-    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
+        <div class="h-2 skeleton rounded w-full mb-1"></div>
+        <div class="h-2 skeleton rounded w-2/3"></div>
+      </div>
+    `;
   }
+  container.innerHTML = skeleton;
 }
 
-// ===== MODAL ZOOM FOTO (DENGAN MULTIPLE FALLBACK) =====
-function openZoomModal(imageUrl, caption) {
-  const modal = document.getElementById('zoomModal');
-  const img = document.getElementById('zoomImage');
-  const loading = document.getElementById('zoomLoading');
-  const cap = document.getElementById('zoomCaption');
+// ===== EMPTY STATE =====
+function showEmptyState(containerId, icon, title, message) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
   
-  const formats = getZoomFormats(imageUrl);
-  
-  if (!formats || formats.length === 0) {
-    alert('URL foto tidak valid');
-    return;
-  }
-  
-  // Show loading
-  if (loading) loading.classList.remove('hidden');
-  img.style.display = 'none';
-  cap.innerText = '';
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  
-  let formatIndex = 0;
-  
-  function tryNextFormat() {
-    if (formatIndex >= formats.length) {
-      // Semua format gagal
-      if (loading) loading.classList.add('hidden');
-      cap.innerText = '❌ Gagal memuat foto';
-      return;
-    }
-    
-    const testUrl = formats[formatIndex];
-    
-    img.onload = function() {
-      if (loading) loading.classList.add('hidden');
-      img.style.display = 'block';
-      cap.innerText = caption || '';
-    };
-    
-    img.onerror = function() {
-      formatIndex++;
-      tryNextFormat();
-    };
-    
-    img.src = testUrl;
-  }
-  
-  // Mulai coba format pertama
-  tryNextFormat();
-}
-
-function closeZoomModal() {
-  const modal = document.getElementById('zoomModal');
-  const img = document.getElementById('zoomImage');
-  
-  modal.classList.add('hidden');
-  modal.classList.remove('flex');
-  img.src = '';
-  img.style.display = 'none';
-}
-
-function showInfoSub(subName) {
-  document.getElementById('info-menu-utama').classList.add('hidden');
-  document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
-  const subEl = document.getElementById('info-sub-' + subName);
-  if (subEl) subEl.classList.remove('hidden');
-  
-  if (subName === 'rekap') loadRekapAbsensi();
-  if (subName === 'patroli') loadRekapPatroli();
-  if (subName === 'kejadian') loadRekapKejadian();
-  if (subName === 'riwayat') loadPengajuanUser();
-  if (subName === 'gaji') loadSlipGaji();
-}
-
-function backToInfoMenu() {
-  document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
-  document.getElementById('info-menu-utama').classList.remove('hidden');
+  container.innerHTML = `
+    <div class="flex flex-col items-center justify-center py-10 text-center">
+      <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+        <i class="${icon} text-3xl text-slate-400"></i>
+      </div>
+      <p class="font-bold text-slate-700 text-sm mb-1">${title}</p>
+      <p class="text-xs text-slate-500 max-w-[200px]">${message}</p>
+    </div>
+  `;
 }
 
 // ===== REKAP ABSENSI =====
@@ -1117,6 +1014,9 @@ async function loadRekapAbsensi() {
   const [tahun, bln] = bulanAktif.split('-').map(Number);
   const now = new Date();
   const bulanSudahLewat = (tahun < now.getFullYear()) || (tahun === now.getFullYear() && bln < now.getMonth() + 1);
+  
+  showSkeleton('tabelDetailHarian', 3);
+  
   try {
     const resAbsen = await fetch(CONFIG.GAS_URL + '?action=getRekap&username=' + currentUser.username + '&bulan=' + bulanAktif);
     const resultAbsen = await resAbsen.json();
@@ -1200,7 +1100,7 @@ function renderDetailHarian(grouped, ijinList, filterTanggal) {
   const sortedKeys = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
   const displayKeys = filterTanggal ? [filterTanggal] : sortedKeys;
   if (displayKeys.length === 0) {
-    tabelEl.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400 text-xs">Tidak ada data absensi.</td></tr>';
+    showEmptyState('tabelDetailHarian', 'fa-solid fa-calendar-xmark', 'Tidak Ada Data', 'Pilih tanggal di kalender untuk melihat detail');
     return;
   }
   tabelEl.innerHTML = displayKeys.map(key => {
@@ -1232,60 +1132,178 @@ function getHariKerjaBulan(tahun, bulan) {
   return count;
 }
 
-// ===== TOGGLE FORM PATROLI & KEJADIAN =====
-function toggleFormPatroli() {
-  const form = document.getElementById('formPatroli');
-  const icon = document.getElementById('iconPatroli');
-  if (form.classList.contains('hidden')) {
-    form.classList.remove('hidden');
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    form.classList.add('hidden');
-    icon.style.transform = 'rotate(0deg)';
+// ===== REKAP PATROLI =====
+async function loadRekapPatroli() {
+  const filterBulan = document.getElementById('filterBulanPatroli').value;
+  const listEl = document.getElementById('listRekapPatroli');
+  
+  showSkeleton('listRekapPatroli', 3);
+  
+  try {
+    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapPatroli&bulan=' + filterBulan + '&t=' + Date.now());
+    const result = await res.json();
+    
+    if (result.status !== 'success') {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Gagal memuat data.</p>';
+      return;
+    }
+    
+    const data = result.data || [];
+    const total = result.total || 0;
+    const bulanIni = result.bulanIni || 0;
+    
+    document.getElementById('statTotalPatroli').innerText = total;
+    document.getElementById('statPatroliBulanIni').innerText = bulanIni;
+    
+    if (data.length === 0) {
+      showEmptyState('listRekapPatroli', 'fa-solid fa-route', 'Belum Ada Patroli', 'Mulai catat patroli pertamamu hari ini!');
+      return;
+    }
+    
+    listEl.innerHTML = data.map(p => {
+      const tgl = new Date(p.timestamp);
+      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      
+      const foto1ThumbUrl = getThumbnailUrl(p.foto1);
+      const foto2ThumbUrl = getThumbnailUrl(p.foto2);
+      
+      const foto1Html = foto1ThumbUrl ? 
+        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      
+      const foto2Html = foto2ThumbUrl ? 
+        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      
+      return `
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <p class="font-bold text-xs text-amber-600"><i class="fa-solid fa-route"></i> ${p.lokasi_patroli || '-'}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-600 mb-1">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-500 mb-2">💬 ${p.keterangan || 'Tidak ada keterangan'}</p>
+          ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
+        </div>
+      `;
+    }).join('');
+    
+  } catch (e) {
+    console.error('Gagal load rekap patroli:', e);
+    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
   }
 }
 
-function toggleFormKejadian() {
-  const form = document.getElementById('formKejadian');
-  const icon = document.getElementById('iconKejadian');
-  if (form.classList.contains('hidden')) {
-    form.classList.remove('hidden');
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    form.classList.add('hidden');
-    icon.style.transform = 'rotate(0deg)';
+// ===== REKAP KEJADIAN =====
+async function loadRekapKejadian() {
+  const filterBulan = document.getElementById('filterBulanKejadian').value;
+  const listEl = document.getElementById('listRekapKejadian');
+  
+  showSkeleton('listRekapKejadian', 3);
+  
+  try {
+    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapKejadian&bulan=' + filterBulan + '&t=' + Date.now());
+    const result = await res.json();
+    
+    if (result.status !== 'success') {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Gagal memuat data.</p>';
+      return;
+    }
+    
+    const data = result.data || [];
+    const total = result.total || 0;
+    const bulanIni = result.bulanIni || 0;
+    
+    document.getElementById('statTotalKejadian').innerText = total;
+    document.getElementById('statKejadianBulanIni').innerText = bulanIni;
+    
+    if (data.length === 0) {
+      showEmptyState('listRekapKejadian', 'fa-solid fa-triangle-exclamation', 'Belum Ada Kejadian', 'Tidak ada kejadian yang dilaporkan');
+      return;
+    }
+    
+    listEl.innerHTML = data.map(k => {
+      const tgl = new Date(k.timestamp);
+      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      
+      const statusColor = k.status === 'OPEN' ? 'bg-amber-100 text-amber-700' : 
+                          k.status === 'CLOSED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
+      
+      const foto1ThumbUrl = getThumbnailUrl(k.foto1);
+      const foto2ThumbUrl = getThumbnailUrl(k.foto2);
+      
+      const foto1Html = foto1ThumbUrl ? 
+        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      
+      const foto2Html = foto2ThumbUrl ? 
+        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      
+      return `
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <p class="font-bold text-xs text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> ${k.jenis_kejadian || '-'}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
+          </div>
+          <p class="text-[10px] text-slate-600 mb-1">📍 ${k.lokasi_kejadian || '-'}</p>
+          <p class="text-[10px] text-slate-500 mb-2">💬 ${k.kronologi || 'Tidak ada kronologi'}</p>
+          ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
+        </div>
+      `;
+    }).join('');
+    
+  } catch (e) {
+    console.error('Gagal load rekap kejadian:', e);
+    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
   }
+}
+
+// ===== NAVIGASI INFO =====
+function showInfoSub(subName) {
+  document.getElementById('info-menu-utama').classList.add('hidden');
+  document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
+  const subEl = document.getElementById('info-sub-' + subName);
+  if (subEl) subEl.classList.remove('hidden');
+  
+  if (subName === 'rekap') loadRekapAbsensi();
+  if (subName === 'patroli') loadRekapPatroli();
+  if (subName === 'kejadian') loadRekapKejadian();
+  if (subName === 'riwayat') loadPengajuanUser();
+  if (subName === 'gaji') loadSlipGaji();
+}
+
+function backToInfoMenu() {
+  document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
+  document.getElementById('info-menu-utama').classList.remove('hidden');
 }
 
 // ===== NAVIGASI SUB-PAGE PATROLI & KEJADIAN =====
 function openSubPatroli() {
-  // Sembunyikan card utama di tab absen
   document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
     if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
       el.classList.add('hidden');
     }
   });
-  // Tampilkan sub-page patroli
   document.getElementById('sub-patroli').classList.remove('hidden');
 }
 
 function openSubKejadian() {
-  // Sembunyikan card utama di tab absen
   document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
     if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
       el.classList.add('hidden');
     }
   });
-  // Tampilkan sub-page kejadian
   document.getElementById('sub-kejadian').classList.remove('hidden');
 }
 
 function backToAbsenMenu() {
-  // Sembunyikan sub-page
   document.getElementById('sub-patroli').classList.add('hidden');
   document.getElementById('sub-kejadian').classList.add('hidden');
   
-  // Tampilkan kembali semua card utama di tab absen
   document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white').forEach(el => {
     if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
       el.classList.remove('hidden');
@@ -1297,14 +1315,17 @@ function backToAbsenMenu() {
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
   document.getElementById('tab-' + t).classList.remove('hidden');
+  
   document.querySelectorAll('.navBtn').forEach(btn => {
-    btn.className = btn.className.replace('bg-slate-900 text-white', 'bg-slate-100 text-slate-700');
+    btn.className = 'navBtn flex-1 h-14 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1';
   });
-  if (btnElement) btnElement.className = btnElement.className.replace('bg-slate-100 text-slate-700', 'bg-slate-900 text-white');
+  
+  if (btnElement) {
+    btnElement.className = 'navBtn flex-1 h-14 bg-slate-900 text-white rounded-2xl text-[10px] font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1 shadow-lg -translate-y-1';
+  }
   
   if (t === 'info') backToInfoMenu();
   if (t === 'profil') {
-    // Update data profil
     document.getElementById('profilNamaHeader').innerText = currentUser.nama;
     document.getElementById('profilRoleHeader').innerText = currentUser.role.toUpperCase();
     document.getElementById('profilNama').innerText = currentUser.nama;
@@ -1315,35 +1336,8 @@ function setTab(t, btnElement) {
     document.getElementById('profilTlp').innerText = currentUser.no_tlp || '-';
     document.getElementById('profilEmail').innerText = currentUser.email || '-';
     document.getElementById('profilLokasi').innerText = selectedLokasi ? selectedLokasi.nama_lokasi : '-';
-    
-    // Update avatar
     updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
-    
-    // Load statistik (PENTING: panggil setiap kali tab profil dibuka)
     loadStatistikProfil();
-  }
-}
-
-// ===== LOAD STATISTIK PROFIL (DIPERBAIKI) =====
-async function loadStatistikProfil() {
-  if (!currentUser || !currentUser.username) return;
-  
-  try {
-    const url = CONFIG.GAS_URL + '?action=getStatistik&username=' + encodeURIComponent(currentUser.username.trim().toLowerCase()) + '&t=' + Date.now();
-    const res = await fetch(url);
-    const result = await res.json();
-    
-    console.log('Statistik Response:', result);
-    
-    if (result.status === 'success' && result.data) {
-      document.getElementById('statAbsenBulan').innerText = result.data.totalAbsen || 0;
-      document.getElementById('statPatroliBulan').innerText = result.data.totalPatroli || 0;
-      document.getElementById('statKejadianBulan').innerText = result.data.totalKejadian || 0;
-    } else {
-      console.error('Gagal load statistik:', result.message);
-    }
-  } catch (e) {
-    console.error('Error load statistik:', e);
   }
 }
 
@@ -1366,109 +1360,6 @@ function doLogout() {
     localStorage.clear();
     location.reload();
   }
-}
-
-// ===== UPDATE AVATAR DI HEADER (Foto atau Inisial) =====
-function updateAvatarDisplay(fotoUrl, nama, elementIdImg, elementIdText) {
-  const imgEl = document.getElementById(elementIdImg);
-  const textEl = document.getElementById(elementIdText);
-  
-  if (fotoUrl && fotoUrl !== '' && fotoUrl !== 'null') {
-    // Konversi URL Google Drive ke format yang bisa di-embed
-    const thumbUrl = getThumbnailUrl(fotoUrl);
-    imgEl.src = thumbUrl;
-    imgEl.classList.remove('hidden');
-    textEl.classList.add('hidden');
-    
-    // Handle error load
-    imgEl.onerror = function() {
-      imgEl.classList.add('hidden');
-      textEl.classList.remove('hidden');
-      textEl.innerText = String(nama || '-').substring(0, 2).toUpperCase();
-    };
-  } else {
-    imgEl.classList.add('hidden');
-    textEl.classList.remove('hidden');
-    textEl.innerText = String(nama || '-').substring(0, 2).toUpperCase();
-  }
-}
-
-// ===== HANDLE FOTO PROFIL =====
-async function handleFotoProfilChange(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  
-  showLoading(true);
-  
-  try {
-    // Compress foto
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async function(e) {
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = async function() {
-        // Compress ke ukuran yang wajar (max 400px)
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxSize = 400;
-        
-        if (width > maxSize || height > maxSize) {
-          if (width > height) {
-            height = Math.round((height * maxSize) / width);
-            width = maxSize;
-          } else {
-            width = Math.round((width * maxSize) / height);
-            height = maxSize;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-        
-        // Kirim ke server
-        const payload = {
-          action: 'uploadFotoProfil',
-          username: currentUser.username,
-          foto_base64: compressedBase64
-        };
-        
-        const response = await fetch(CONFIG.GAS_URL, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
-        
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-          // Update data user
-          currentUser.foto_url = result.foto_url;
-          localStorage.setItem('sbu_user', JSON.stringify(currentUser));
-          
-          // Update tampilan
-          updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'avatarTopImg', 'avatarTopText');
-          updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
-          
-          alert('✅ Foto profil berhasil diupdate!');
-        } else {
-          alert('❌ Gagal: ' + result.message);
-        }
-        
-        showLoading(false);
-      };
-    };
-  } catch (err) {
-    console.error('Error upload foto profil:', err);
-    alert('❌ Gagal upload foto: ' + err.message);
-    showLoading(false);
-  }
-  
-  // Reset input agar bisa upload foto yang sama lagi
-  event.target.value = '';
 }
 
 // ===== INIT =====
