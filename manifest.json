@@ -1,18 +1,13 @@
 {
-  "name": "PT SENTRA BHAKTI UTAMA - Absensi Satpam",
-  "short_name": "SBU Absen",
+  "name": "PT SBU - Security Management System",
+  "short_name": "SBU Absensi",
+  "description": "Aplikasi Absensi & Manajemen Keamanan PT Sentra Bhakti Utama",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
+  "orientation": "portrait",
   "icons": [
-    {
-      "src": "./icon-72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
     {
       "src": "./icon-192.png",
       "sizes": "192x192",
