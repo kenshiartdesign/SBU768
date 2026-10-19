@@ -738,13 +738,137 @@ async function loadSlipGaji() {
   }
 }
 
-// ===== NAVIGASI INFO =====
+// ===== REKAP PATROLI =====
+async function loadRekapPatroli() {
+  if (!currentUser) return;
+  
+  const filterBulan = document.getElementById('filterBulanPatroli').value;
+  const listEl = document.getElementById('listRekapPatroli');
+  
+  try {
+    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapPatroli&username=' + currentUser.username + '&bulan=' + filterBulan);
+    const result = await res.json();
+    
+    if (result.status !== 'success') {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Gagal memuat data.</p>';
+      return;
+    }
+    
+    const data = result.data || [];
+    const total = result.total || 0;
+    const bulanIni = result.bulanIni || 0;
+    
+    // Update statistik
+    document.getElementById('statTotalPatroli').innerText = total;
+    document.getElementById('statPatroliBulanIni').innerText = bulanIni;
+    
+    if (data.length === 0) {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Tidak ada data patroli.</p>';
+      return;
+    }
+    
+    // Render list patroli
+    listEl.innerHTML = data.map(p => {
+      const tgl = new Date(p.timestamp);
+      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      
+      return `
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="font-bold text-xs text-amber-600"><i class="fa-solid fa-route"></i> ${p.lokasi_patroli || '-'}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">📅 ${tglStr} • ⏰ ${jamStr}</p>
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-600 mb-2">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-500 mb-2"> ${p.keterangan || 'Tidak ada keterangan'}</p>
+          <div class="flex gap-2">
+            ${p.foto1 ? `<a href="${p.foto1}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Foto 1</a>` : ''}
+            ${p.foto2 ? `<a href="${p.foto2}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Foto 2</a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (e) {
+    console.error('Gagal load rekap patroli:', e);
+    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
+  }
+}
+
+// ===== REKAP KEJADIAN =====
+async function loadRekapKejadian() {
+  if (!currentUser) return;
+  
+  const filterBulan = document.getElementById('filterBulanKejadian').value;
+  const listEl = document.getElementById('listRekapKejadian');
+  
+  try {
+    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapKejadian&username=' + currentUser.username + '&bulan=' + filterBulan);
+    const result = await res.json();
+    
+    if (result.status !== 'success') {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Gagal memuat data.</p>';
+      return;
+    }
+    
+    const data = result.data || [];
+    const total = result.total || 0;
+    const bulanIni = result.bulanIni || 0;
+    
+    // Update statistik
+    document.getElementById('statTotalKejadian').innerText = total;
+    document.getElementById('statKejadianBulanIni').innerText = bulanIni;
+    
+    if (data.length === 0) {
+      listEl.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Tidak ada data kejadian.</p>';
+      return;
+    }
+    
+    // Render list kejadian
+    listEl.innerHTML = data.map(k => {
+      const tgl = new Date(k.timestamp);
+      const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      
+      const statusColor = k.status === 'OPEN' ? 'bg-amber-100 text-amber-700' : 
+                          k.status === 'CLOSED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
+      
+      return `
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="font-bold text-xs text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> ${k.jenis_kejadian || '-'}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">📅 ${tglStr} • ⏰ ${jamStr}</p>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
+          </div>
+          <p class="text-[10px] text-slate-600 mb-2">📍 ${k.lokasi_kejadian || '-'}</p>
+          <p class="text-[10px] text-slate-500 mb-2"> ${k.kronologi || 'Tidak ada kronologi'}</p>
+          <div class="flex gap-2">
+            ${k.foto1 ? `<a href="${k.foto1}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Bukti 1</a>` : ''}
+            ${k.foto2 ? `<a href="${k.foto2}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Bukti 2</a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    
+  } catch (e) {
+    console.error('Gagal load rekap kejadian:', e);
+    listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
+  }
+}
+
 function showInfoSub(subName) {
   document.getElementById('info-menu-utama').classList.add('hidden');
   document.querySelectorAll('[id^="info-sub-"]').forEach(el => el.classList.add('hidden'));
   const subEl = document.getElementById('info-sub-' + subName);
   if (subEl) subEl.classList.remove('hidden');
+  
   if (subName === 'rekap') loadRekapAbsensi();
+  if (subName === 'patroli') loadRekapPatroli();
+  if (subName === 'kejadian') loadRekapKejadian();
   if (subName === 'riwayat') loadPengajuanUser();
   if (subName === 'gaji') loadSlipGaji();
 }
