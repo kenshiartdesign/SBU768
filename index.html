@@ -486,7 +486,7 @@
     
     <!-- List Patroli -->
     <div class="space-y-2">
-      <p class="font-bold text-xs text-slate-600 mb-2">Riwayat Patroli</p>
+      <p class="font-bold text-xs text-slate-600 mb-2">Riwayat Patroli (Semua User)</p>
       <div id="listRekapPatroli" class="space-y-2">
         <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
       </div>
@@ -556,7 +556,7 @@
     
     <!-- List Kejadian -->
     <div class="space-y-2">
-      <p class="font-bold text-xs text-slate-600 mb-2">Riwayat Kejadian</p>
+      <p class="font-bold text-xs text-slate-600 mb-2">Riwayat Kejadian (Semua User)</p>
       <div id="listRekapKejadian" class="space-y-2">
         <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
       </div>
@@ -649,6 +649,15 @@
     </div>
   </div>
 
+<!-- Modal Zoom Foto -->
+<div id="zoomModal" class="fixed inset-0 z-[300] bg-black/95 hidden flex-col items-center justify-center p-4" onclick="closeZoomModal()">
+  <button onclick="closeZoomModal()" class="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white font-bold active:scale-95 transition">
+    <i class="fa-solid fa-xmark text-xl"></i>
+  </button>
+  <img id="zoomImage" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl" onclick="event.stopPropagation()">
+  <p id="zoomCaption" class="text-white/70 text-xs mt-3 text-center"></p>
+</div>
+  
   <script src="./app.js"></script>
 </body>
 </html>
