@@ -12,6 +12,7 @@ let patroliData = { foto1: '', foto2: '' };
 let kejadianData = { foto1: '', foto2: '' };
 let ijinData = { foto: '' };
 let videoStream = null;
+let notificationCount = 0;
 
 // ===== TOAST NOTIFICATION =====
 function showToast(message, type = 'info') {
@@ -134,7 +135,7 @@ function startClock() {
   }, 1000);
 }
 
-// ===== JAM DIGITAL MODERN (Header Absen) =====
+// ===== JAM MINI HEADER ABSEN =====
 function updateJamMini() {
   const now = new Date();
   const jam = String(now.getHours()).padStart(2, '0');
@@ -156,6 +157,28 @@ function updateJamMini() {
 
 setInterval(updateJamMini, 1000);
 updateJamMini();
+
+// ===== DARK MODE =====
+function initDarkMode() {
+  const saved = localStorage.getItem('sbu_dark_mode');
+  if (saved === 'true') {
+    document.documentElement.classList.add('dark');
+    const icon = document.getElementById('darkModeIcon');
+    if (icon) icon.className = 'fa-solid fa-sun text-sm';
+  }
+}
+
+function toggleDarkMode() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('sbu_dark_mode', isDark);
+  
+  const icon = document.getElementById('darkModeIcon');
+  if (icon) {
+    icon.className = isDark ? 'fa-solid fa-sun text-sm' : 'fa-solid fa-moon text-sm';
+  }
+  
+  showToast(isDark ? '🌙 Dark Mode Aktif' : '☀️ Light Mode Aktif', 'info');
+}
 
 // ===== LOGIN & LOKASI =====
 async function doLogin() {
@@ -198,7 +221,7 @@ async function loadLokasi() {
     if (result.data && result.data.length > 0) {
       result.data.forEach(l => {
         const div = document.createElement('div');
-        div.className = 'bg-white rounded-[20px] p-4 flex justify-between items-center shadow-sm';
+        div.className = 'bg-white dark:bg-slate-800 rounded-[20px] p-4 flex justify-between items-center shadow-sm';
         div.innerHTML = '<div><p class="font-bold text-sm">' + l.nama_lokasi + '</p><p class="text-xs text-slate-500">' + l.alamat + '</p></div><button class="bg-slate-900 text-white px-4 h-9 rounded-xl text-xs font-bold active:scale-95 transition">PILIH</button>';
         div.querySelector('button').onclick = () => {
           selectedLokasi = l;
@@ -247,7 +270,13 @@ async function showMainScreen() {
   sm.classList.add('flex');
   
   document.getElementById('namaTop').innerText = currentUser.nama;
-  document.getElementById('lokasiTop').querySelector('span:last-child').innerText = selectedLokasi.nama_lokasi;
+  const lokasiTopEl = document.getElementById('lokasiTop');
+  if (lokasiTopEl.querySelector) {
+    const span = lokasiTopEl.querySelector('span:last-child');
+    if (span) span.innerText = selectedLokasi.nama_lokasi;
+  } else {
+    lokasiTopEl.innerText = selectedLokasi.nama_lokasi;
+  }
   document.getElementById('infoLokasiAbsen').innerText = selectedLokasi.nama_lokasi;
   
   updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'avatarTopImg', 'avatarTopText');
@@ -274,7 +303,7 @@ async function showMainScreen() {
   
   if (savedStatus && savedStatus.last_action === 'masuk') {
     btnMasuk.disabled = true;
-    btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+    btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnMasuk.onclick = null;
     btnPulang.disabled = false;
     btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
@@ -282,19 +311,27 @@ async function showMainScreen() {
     if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold text-green-600'; }
   } else if (savedStatus && savedStatus.last_action === 'pulang') {
     btnMasuk.disabled = true;
-    btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+    btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnMasuk.onclick = null;
     btnPulang.disabled = true;
-    btnPulang.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+    btnPulang.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnPulang.onclick = null;
     if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold text-red-600'; }
   } else {
     await checkAbsenStatus();
   }
   
+  // Init fitur baru
+  initDarkMode();
+  initPullToRefresh();
+  
+  // Load data di background
   loadSlipGaji();
   loadPengajuanUser();
   loadStatistikProfil();
+  
+  // Load notifikasi setelah 2 detik
+  setTimeout(() => checkNotifications(), 2000);
 }
 
 async function checkAbsenStatus() {
@@ -315,7 +352,7 @@ async function checkAbsenStatus() {
         btnMasuk.onclick = () => openCamera('masuk');
       } else {
         btnMasuk.disabled = true;
-        btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+        btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
         btnMasuk.onclick = null;
       }
       
@@ -325,7 +362,7 @@ async function checkAbsenStatus() {
         btnPulang.onclick = () => openCamera('pulang');
       } else {
         btnPulang.disabled = true;
-        btnPulang.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+        btnPulang.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
         btnPulang.onclick = null;
       }
       
@@ -418,7 +455,7 @@ async function captureSelfie() {
   
   if (gps) {
     ctx.fillStyle = '#9ca3af'; ctx.font = '13px monospace';
-    ctx.fillText(' ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), canvas.width / 2, canvas.height - watermarkHeight + 140);
+    ctx.fillText('📍 ' + lokasiText + ' | ' + gps.lat.toFixed(5) + ', ' + gps.lng.toFixed(5), canvas.width / 2, canvas.height - watermarkHeight + 140);
   }
   
   capturedBase64 = canvas.toDataURL('image/jpeg', 0.7);
@@ -430,7 +467,7 @@ async function captureSelfie() {
   
   if (currentCameraAction === 'masuk') {
     btnMasuk.disabled = true;
-    btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+    btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnMasuk.onclick = null;
     btnPulang.disabled = false;
     btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
@@ -438,10 +475,10 @@ async function captureSelfie() {
     if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold text-green-600'; }
   } else if (currentCameraAction === 'pulang') {
     btnMasuk.disabled = true;
-    btnMasuk.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+    btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnMasuk.onclick = null;
     btnPulang.disabled = true;
-    btnPulang.className = 'h-20 bg-slate-200 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+    btnPulang.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
     btnPulang.onclick = null;
     if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold text-red-600'; }
   }
@@ -638,7 +675,7 @@ function openCamera(action) {
   if (timemark) {
     const now = new Date();
     const pasaran = hitungHariPasaran();
-    timemark.innerText = '📍 ' + (selectedLokasi ? selectedLokasi.nama_lokasi : '-') + ' | ⏰ ' + now.toLocaleDateString('id-ID') + ' (' + pasaran + ') ' + now.toLocaleTimeString('id-ID');
+    timemark.innerText = ' ' + (selectedLokasi ? selectedLokasi.nama_lokasi : '-') + ' | ⏰ ' + now.toLocaleDateString('id-ID') + ' (' + pasaran + ') ' + now.toLocaleTimeString('id-ID');
   }
   modal.classList.remove('hidden');
   modal.classList.add('flex');
@@ -779,7 +816,7 @@ async function submitIjinFinal() {
     showToast('Pengajuan ijin/sakit berhasil dikirim!', 'success');
     ijinData = { foto: '' };
     document.getElementById('ijinKet').value = '';
-    resetBtn('btnIjin', '📷 Upload Bukti (Surat Dokter/Undangan)');
+    resetBtn('btnIjin', '📷 Upload Bukti');
     loadPengajuanUser();
   } else {
     showToast('Gagal: ' + result.message, 'error');
@@ -912,11 +949,11 @@ async function loadPengajuanUser() {
     } else {
       listEl.innerHTML = allPengajuan.map(p => {
         let statusColor = p.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : p.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '❌';
+        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '';
         if (p.type === 'IJIN') {
-          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
+          return '<div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600 dark:text-slate-300">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
         } else {
-          return '<div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 mt-1"> Pengganti: ' + p.pengganti + '</p></div>';
+          return '<div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600 dark:text-slate-300">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1"> Pengganti: ' + p.pengganti + '</p></div>';
         }
       }).join('');
     }
@@ -932,7 +969,7 @@ async function loadSlipGaji() {
     const result = await res.json();
     const list = document.getElementById('listSlipGaji');
     if (result.status === 'success' && result.data.length > 0) {
-      list.innerHTML = result.data.map(s => '<div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200"><div><p class="font-bold text-sm">' + s.periode + '</p><p class="text-[10px] text-slate-500">Total: Rp ' + Number(s.total).toLocaleString('id-ID') + '</p></div><a href="' + s.file_url + '" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">LIHAT</a></div>').join('');
+      list.innerHTML = result.data.map(s => '<div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600"><div><p class="font-bold text-sm">' + s.periode + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400">Total: Rp ' + Number(s.total).toLocaleString('id-ID') + '</p></div><a href="' + s.file_url + '" target="_blank" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold">LIHAT</a></div>').join('');
     } else {
       showEmptyState('listSlipGaji', 'fa-solid fa-money-bill-wave', 'Belum Ada Slip Gaji', 'Slip gaji Anda akan muncul di sini');
     }
@@ -968,7 +1005,7 @@ function showSkeleton(containerId, rows = 3) {
   let skeleton = '';
   for (let i = 0; i < rows; i++) {
     skeleton += `
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 animate-pulse">
+      <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600 animate-pulse">
         <div class="flex items-center gap-3 mb-2">
           <div class="w-10 h-10 rounded-lg skeleton"></div>
           <div class="flex-1">
@@ -991,11 +1028,11 @@ function showEmptyState(containerId, icon, title, message) {
   
   container.innerHTML = `
     <div class="flex flex-col items-center justify-center py-10 text-center">
-      <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+      <div class="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
         <i class="${icon} text-3xl text-slate-400"></i>
       </div>
-      <p class="font-bold text-slate-700 text-sm mb-1">${title}</p>
-      <p class="text-xs text-slate-500 max-w-[200px]">${message}</p>
+      <p class="font-bold text-slate-700 dark:text-slate-200 text-sm mb-1">${title}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 max-w-[200px]">${message}</p>
     </div>
   `;
 }
@@ -1078,12 +1115,12 @@ function renderKalender(tahun, bln, grouped, ijinList) {
       const cur = new Date(tahun, bln - 1, d);
       return cur >= mulai && cur <= selesai;
     });
-    let bgClass = 'bg-slate-100 text-slate-700';
+    let bgClass = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200';
     let borderClass = '';
-    if (adaIjin) bgClass = 'bg-orange-200 text-orange-800';
+    if (adaIjin) bgClass = 'bg-orange-200 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200';
     else if (data) {
-      if (data.masuk && data.pulang) bgClass = 'bg-green-200 text-green-800';
-      else bgClass = 'bg-yellow-200 text-yellow-800';
+      if (data.masuk && data.pulang) bgClass = 'bg-green-200 dark:bg-green-900/50 text-green-800 dark:text-green-200';
+      else bgClass = 'bg-yellow-200 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200';
     }
     if (dateStr === todayStr) borderClass = 'border-2 border-blue-500';
     html += '<div onclick="pilihTanggalKalender(\'' + dateStr + '\')" class="h-11 rounded-lg flex items-center justify-center text-sm font-bold cursor-pointer hover:scale-105 transition active:scale-95 ' + bgClass + ' ' + borderClass + '">' + d + '</div>';
@@ -1113,13 +1150,13 @@ function renderDetailHarian(grouped, ijinList, filterTanggal) {
       return d >= mulai && d <= selesai;
     });
     let statusBadge = '';
-    if (adaIjin) statusBadge = '<span class="bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-bold">Izin</span>';
-    else if (data && data.masuk && data.pulang) statusBadge = '<span class="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-bold">Lengkap</span>';
-    else if (data && (data.masuk || data.pulang)) statusBadge = '<span class="bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full text-xs font-bold">Tdk Lengkap</span>';
-    else statusBadge = '<span class="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-bold">Alpha</span>';
+    if (adaIjin) statusBadge = '<span class="bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-200 px-2.5 py-1 rounded-full text-xs font-bold">Izin</span>';
+    else if (data && data.masuk && data.pulang) statusBadge = '<span class="bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-200 px-2.5 py-1 rounded-full text-xs font-bold">Lengkap</span>';
+    else if (data && (data.masuk || data.pulang)) statusBadge = '<span class="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-200 px-2.5 py-1 rounded-full text-xs font-bold">Tdk Lengkap</span>';
+    else statusBadge = '<span class="bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-200 px-2.5 py-1 rounded-full text-xs font-bold">Alpha</span>';
     const masukCell = data && data.masuk ? '<a href="' + (data.masuk.foto || '#') + '" target="_blank" class="inline-flex items-center gap-1 text-green-600 font-bold text-xs"><i class="fa-solid fa-arrow-right-to-bracket text-xs"></i> ' + data.masuk.jam + '</a>' : '<span class="text-slate-300">-</span>';
     const pulangCell = data && data.pulang ? '<a href="' + (data.pulang.foto || '#') + '" target="_blank" class="inline-flex items-center gap-1 text-red-600 font-bold text-xs"><i class="fa-solid fa-arrow-right-from-bracket text-xs"></i> ' + data.pulang.jam + '</a>' : '<span class="text-slate-300">-</span>';
-    return '<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="py-2 px-2 font-bold text-slate-700 text-xs">' + tglStr + '</td><td class="py-2 px-2 text-center">' + masukCell + '</td><td class="py-2 px-2 text-center">' + pulangCell + '</td><td class="py-2 px-2 text-center">' + statusBadge + '</td></tr>';
+    return '<tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition"><td class="py-2 px-2 font-bold text-slate-700 dark:text-slate-200 text-xs">' + tglStr + '</td><td class="py-2 px-2 text-center">' + masukCell + '</td><td class="py-2 px-2 text-center">' + pulangCell + '</td><td class="py-2 px-2 text-center">' + statusBadge + '</td></tr>';
   }).join('');
 }
 
@@ -1169,21 +1206,21 @@ async function loadRekapPatroli() {
       const foto2ThumbUrl = getThumbnailUrl(p.foto2);
       
       const foto1Html = foto1ThumbUrl ? 
-        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 cursor-pointer active:scale-95 transition">` : '';
       
       const foto2Html = foto2ThumbUrl ? 
-        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 cursor-pointer active:scale-95 transition">` : '';
       
       return `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
           <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
               <p class="font-bold text-xs text-amber-600"><i class="fa-solid fa-route"></i> ${p.lokasi_patroli || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
             </div>
           </div>
-          <p class="text-[10px] text-slate-600 mb-1">📍 ${p.nama_lokasi || '-'}</p>
-          <p class="text-[10px] text-slate-500 mb-2">💬 ${p.keterangan || 'Tidak ada keterangan'}</p>
+          <p class="text-[10px] text-slate-600 dark:text-slate-300 mb-1">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">💬 ${p.keterangan || 'Tidak ada keterangan'}</p>
           ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
       `;
@@ -1235,22 +1272,22 @@ async function loadRekapKejadian() {
       const foto2ThumbUrl = getThumbnailUrl(k.foto2);
       
       const foto1Html = foto1ThumbUrl ? 
-        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 dark:border-red-800 cursor-pointer active:scale-95 transition">` : '';
       
       const foto2Html = foto2ThumbUrl ? 
-        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 dark:border-red-800 cursor-pointer active:scale-95 transition">` : '';
       
       return `
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+        <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
           <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
               <p class="font-bold text-xs text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> ${k.jenis_kejadian || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
             </div>
             <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
           </div>
-          <p class="text-[10px] text-slate-600 mb-1">📍 ${k.lokasi_kejadian || '-'}</p>
-          <p class="text-[10px] text-slate-500 mb-2">💬 ${k.kronologi || 'Tidak ada kronologi'}</p>
+          <p class="text-[10px] text-slate-600 dark:text-slate-300 mb-1">📍 ${k.lokasi_kejadian || '-'}</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">💬 ${k.kronologi || 'Tidak ada kronologi'}</p>
           ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
       `;
@@ -1283,7 +1320,7 @@ function backToInfoMenu() {
 
 // ===== NAVIGASI SUB-PAGE PATROLI & KEJADIAN =====
 function openSubPatroli() {
-  document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
+  document.querySelectorAll('#tab-absen > div:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
     if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
       el.classList.add('hidden');
     }
@@ -1292,7 +1329,7 @@ function openSubPatroli() {
 }
 
 function openSubKejadian() {
-  document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
+  document.querySelectorAll('#tab-absen > div:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
     if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
       el.classList.add('hidden');
     }
@@ -1304,11 +1341,142 @@ function backToAbsenMenu() {
   document.getElementById('sub-patroli').classList.add('hidden');
   document.getElementById('sub-kejadian').classList.add('hidden');
   
-  document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white').forEach(el => {
+  document.querySelectorAll('#tab-absen > div').forEach(el => {
     if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
       el.classList.remove('hidden');
     }
   });
+}
+
+// ===== PULL TO REFRESH =====
+function initPullToRefresh() {
+  const content = document.getElementById('mainContent');
+  const indicator = document.getElementById('ptrIndicator');
+  if (!content || !indicator) return;
+  
+  let startY = 0;
+  let currentY = 0;
+  let isPulling = false;
+  let isRefreshing = false;
+  const THRESHOLD = 80;
+  
+  content.addEventListener('touchstart', (e) => {
+    if (content.scrollTop === 0 && !isRefreshing) {
+      startY = e.touches[0].clientY;
+      isPulling = true;
+    }
+  }, { passive: true });
+  
+  content.addEventListener('touchmove', (e) => {
+    if (!isPulling || isRefreshing) return;
+    currentY = e.touches[0].clientY;
+    const diff = currentY - startY;
+    
+    if (diff > 0 && diff <= THRESHOLD * 2) {
+      const progress = Math.min(diff / THRESHOLD, 1);
+      indicator.style.transform = `translateX(-50%) translateY(${-100 + (progress * 110)}px)`;
+      indicator.style.opacity = progress;
+    }
+  }, { passive: true });
+  
+  content.addEventListener('touchend', () => {
+    if (!isPulling || isRefreshing) return;
+    isPulling = false;
+    
+    const diff = currentY - startY;
+    if (diff > THRESHOLD) {
+      isRefreshing = true;
+      indicator.classList.add('active');
+      
+      refreshCurrentTab().then(() => {
+        setTimeout(() => {
+          indicator.classList.remove('active');
+          indicator.style.transform = 'translateX(-50%) translateY(-100px)';
+          indicator.style.opacity = 0;
+          isRefreshing = false;
+          showToast('🔄 Data berhasil diperbarui', 'success');
+        }, 800);
+      });
+    } else {
+      indicator.style.transform = 'translateX(-50%) translateY(-100px)';
+      indicator.style.opacity = 0;
+    }
+  });
+}
+
+async function refreshCurrentTab() {
+  const activeTab = document.querySelector('[id^="tab-"]:not(.hidden)');
+  if (!activeTab) return;
+  
+  const tabId = activeTab.id;
+  
+  if (tabId === 'tab-absen') {
+    await checkAbsenStatus();
+    updateAbsenUI();
+  } else if (tabId === 'tab-info') {
+    const activeSub = document.querySelector('[id^="info-sub-"]:not(.hidden)');
+    if (activeSub) {
+      const subName = activeSub.id.replace('info-sub-', '');
+      if (subName === 'rekap') loadRekapAbsensi();
+      else if (subName === 'patroli') loadRekapPatroli();
+      else if (subName === 'kejadian') loadRekapKejadian();
+      else if (subName === 'riwayat') loadPengajuanUser();
+      else if (subName === 'gaji') loadSlipGaji();
+    } else {
+      loadPengajuanUser();
+      loadSlipGaji();
+    }
+  } else if (tabId === 'tab-profil') {
+    loadStatistikProfil();
+  }
+}
+
+// ===== BADGE NOTIFIKASI =====
+async function checkNotifications() {
+  if (!currentUser) return;
+  
+  try {
+    const res = await fetch(CONFIG.GAS_URL + '?action=getPengajuanUser&username=' + currentUser.username + '&t=' + Date.now());
+    const result = await res.json();
+    
+    if (result.status !== 'success') return;
+    
+    let newCount = 0;
+    const allPengajuan = [];
+    if (result.data.ijin) allPengajuan.push(...result.data.ijin);
+    if (result.data.shift) allPengajuan.push(...result.data.shift);
+    
+    allPengajuan.forEach(p => {
+      if (p.status === 'APPROVED' || p.status === 'REJECTED') {
+        newCount++;
+      }
+    });
+    
+    const badge = document.getElementById('infoBadge');
+    if (badge) {
+      if (newCount > 0) {
+        badge.innerText = newCount > 99 ? '99+' : newCount;
+        badge.classList.remove('hidden');
+        badge.classList.add('badge-bounce');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+    
+    notificationCount = newCount;
+    
+  } catch (e) {
+    console.error('Error check notifications:', e);
+  }
+}
+
+function clearNotificationBadge() {
+  const badge = document.getElementById('infoBadge');
+  if (badge) {
+    badge.classList.add('hidden');
+  }
+  notificationCount = 0;
+  localStorage.setItem('sbu_last_notif_check', Date.now().toString());
 }
 
 // ===== NAVIGASI TAB =====
@@ -1317,14 +1485,17 @@ function setTab(t, btnElement) {
   document.getElementById('tab-' + t).classList.remove('hidden');
   
   document.querySelectorAll('.navBtn').forEach(btn => {
-    btn.className = 'navBtn flex-1 h-14 bg-slate-100 text-slate-500 rounded-2xl text-[10px] font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1';
+    btn.className = 'navBtn flex-1 h-14 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-2xl text-[10px] font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1';
   });
   
   if (btnElement) {
-    btnElement.className = 'navBtn flex-1 h-14 bg-slate-900 text-white rounded-2xl text-[10px] font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1 shadow-lg -translate-y-1';
+    btnElement.className = 'navBtn flex-1 h-14 bg-slate-900 dark:bg-slate-700 text-white rounded-2xl text-[10px] font-bold transition-all duration-200 flex flex-col items-center justify-center gap-1 shadow-lg -translate-y-1';
   }
   
-  if (t === 'info') backToInfoMenu();
+  if (t === 'info') {
+    backToInfoMenu();
+    clearNotificationBadge();
+  }
   if (t === 'profil') {
     document.getElementById('profilNamaHeader').innerText = currentUser.nama;
     document.getElementById('profilRoleHeader').innerText = currentUser.role.toUpperCase();
