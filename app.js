@@ -69,20 +69,25 @@ function updateJamDigital() {
   if (jamEl) jamEl.innerText = jam + ':' + menit + ':' + detik;
 }
 
-// ===== PENANGGALAN JAWA (ALGORITMA AKURAT DENGAN UTC) =====
+// ===== PENANGGALAN JAWA (AKURAT - 17 AGUSTUS 1945 = JUMAT LEGI) =====
 function hitungHariPasaran() {
   const pasaran = ['Legi', 'Pahing', 'Pon', 'Wage', 'Kliwon'];
-  // Referensi: 1 Januari 1900 = Senin Legi (sudah diverifikasi)
-  const referensi = Date.UTC(1900, 0, 1);
-  const sekarang = Date.UTC(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    new Date().getDate()
-  );
-  // Hitung selisih hari dengan UTC (hindari masalah timezone)
-  const selisihHari = Math.floor((sekarang - referensi) / (1000 * 60 * 60 * 24));
+  
+  // Referensi: 17 Agustus 1945 = Jumat Legi
+  const referensi = new Date(1945, 7, 17); // Bulan 7 = Agustus (0-indexed)
+  const sekarang = new Date();
+  
+  // Reset waktu ke midnight untuk perhitungan hari yang akurat
+  referensi.setHours(0, 0, 0, 0);
+  sekarang.setHours(0, 0, 0, 0);
+  
+  // Hitung selisih hari
+  const selisihMs = sekarang.getTime() - referensi.getTime();
+  const selisihHari = Math.round(selisihMs / (1000 * 60 * 60 * 24));
+  
   // Legi = index 0, siklus 5 hari
   const indexPasaran = ((selisihHari % 5) + 5) % 5;
+  
   return pasaran[indexPasaran];
 }
 
