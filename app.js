@@ -833,6 +833,59 @@ function closeZoomModal() {
   img.style.display = 'none';
 }
 
+// ===== KONVERSI URL GOOGLE DRIVE KE FORMAT THUMBNAIL =====
+function getThumbnailUrl(url) {
+  if (!url) return '';
+  
+  // Jika sudah format yang bisa di-embed, kembalikan
+  if (url.includes('lh3.googleusercontent.com')) {
+    return url;
+  }
+  
+  // Extract File ID
+  let fileId = '';
+  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1) fileId = match1[1];
+  
+  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
+  if (match2) fileId = match2[1];
+  
+  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
+  if (match3) fileId = match3[1];
+  
+  if (!fileId) return url;
+  
+  // Return format thumbnail yang paling reliable
+  return 'https://lh3.googleusercontent.com/d/' + fileId;
+}
+
+// ===== KONVERSI URL GOOGLE DRIVE UNTUK ZOOM (MULTIPLE FALLBACK) =====
+function getZoomFormats(url) {
+  if (!url) return null;
+  
+  if (url.includes('lh3.googleusercontent.com')) {
+    return [url];
+  }
+  
+  let fileId = '';
+  const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match1) fileId = match1[1];
+  
+  const match2 = url.match(/open\?id=([a-zA-Z0-9_-]+)/);
+  if (match2) fileId = match2[1];
+  
+  const match3 = url.match(/uc\?id=([a-zA-Z0-9_-]+)/);
+  if (match3) fileId = match3[1];
+  
+  if (!fileId) return [url];
+  
+  return [
+    'https://lh3.googleusercontent.com/d/' + fileId,
+    'https://drive.google.com/uc?export=view&id=' + fileId,
+    'https://drive.google.com/uc?id=' + fileId
+  ];
+}
+
 // ===== REKAP PATROLI (SEMUA USER + THUMBNAIL + ZOOM) =====
 async function loadRekapPatroli() {
   const filterBulan = document.getElementById('filterBulanPatroli').value;
@@ -864,12 +917,15 @@ async function loadRekapPatroli() {
       const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
       const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       
-      // Konversi URL foto
-      const foto1Url = convertDriveUrl(p.foto1);
-      const foto2Url = convertDriveUrl(p.foto2);
+      // Konversi URL untuk thumbnail
+      const foto1ThumbUrl = getThumbnailUrl(p.foto1);
+      const foto2ThumbUrl = getThumbnailUrl(p.foto2);
       
-      const foto1Thumb = foto1Url ? `<img src="${foto1Url}" onerror="this.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
-      const foto2Thumb = foto2Url ? `<img src="${foto2Url}" onerror="this.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      const foto1Html = foto1ThumbUrl ? 
+        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      
+      const foto2Html = foto2ThumbUrl ? 
+        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
       
       return `
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -879,9 +935,9 @@ async function loadRekapPatroli() {
               <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
             </div>
           </div>
-          <p class="text-[10px] text-slate-600 mb-1"> ${p.nama_lokasi || '-'}</p>
-          <p class="text-[10px] text-slate-500 mb-2"> ${p.keterangan || 'Tidak ada keterangan'}</p>
-          ${(foto1Thumb || foto2Thumb) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
+          <p class="text-[10px] text-slate-600 mb-1">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-500 mb-2">💬 ${p.keterangan || 'Tidak ada keterangan'}</p>
+          ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
       `;
     }).join('');
@@ -926,12 +982,15 @@ async function loadRekapKejadian() {
       const statusColor = k.status === 'OPEN' ? 'bg-amber-100 text-amber-700' : 
                           k.status === 'CLOSED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
       
-      // Konversi URL foto
-      const foto1Url = convertDriveUrl(k.foto1);
-      const foto2Url = convertDriveUrl(k.foto2);
+      // Konversi URL untuk thumbnail
+      const foto1ThumbUrl = getThumbnailUrl(k.foto1);
+      const foto2ThumbUrl = getThumbnailUrl(k.foto2);
       
-      const foto1Thumb = foto1Url ? `<img src="${foto1Url}" onerror="this.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
-      const foto2Thumb = foto2Url ? `<img src="${foto2Url}" onerror="this.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      const foto1Html = foto1ThumbUrl ? 
+        `<img src="${foto1ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      
+      const foto2Html = foto2ThumbUrl ? 
+        `<img src="${foto2ThumbUrl}" onerror="this.parentElement.style.display='none'" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
       
       return `
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -943,8 +1002,8 @@ async function loadRekapKejadian() {
             <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
           </div>
           <p class="text-[10px] text-slate-600 mb-1"> ${k.lokasi_kejadian || '-'}</p>
-          <p class="text-[10px] text-slate-500 mb-2"> ${k.kronologi || 'Tidak ada kronologi'}</p>
-          ${(foto1Thumb || foto2Thumb) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
+          <p class="text-[10px] text-slate-500 mb-2">💬 ${k.kronologi || 'Tidak ada kronologi'}</p>
+          ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
       `;
     }).join('');
@@ -955,16 +1014,55 @@ async function loadRekapKejadian() {
   }
 }
 
-// ===== MODAL ZOOM FOTO =====
+// ===== MODAL ZOOM FOTO (DENGAN MULTIPLE FALLBACK) =====
 function openZoomModal(imageUrl, caption) {
   const modal = document.getElementById('zoomModal');
   const img = document.getElementById('zoomImage');
+  const loading = document.getElementById('zoomLoading');
   const cap = document.getElementById('zoomCaption');
   
-  img.src = imageUrl;
-  cap.innerText = caption || '';
+  const formats = getZoomFormats(imageUrl);
+  
+  if (!formats || formats.length === 0) {
+    alert('URL foto tidak valid');
+    return;
+  }
+  
+  // Show loading
+  if (loading) loading.classList.remove('hidden');
+  img.style.display = 'none';
+  cap.innerText = '';
   modal.classList.remove('hidden');
   modal.classList.add('flex');
+  
+  let formatIndex = 0;
+  
+  function tryNextFormat() {
+    if (formatIndex >= formats.length) {
+      // Semua format gagal
+      if (loading) loading.classList.add('hidden');
+      cap.innerText = '❌ Gagal memuat foto';
+      return;
+    }
+    
+    const testUrl = formats[formatIndex];
+    
+    img.onload = function() {
+      if (loading) loading.classList.add('hidden');
+      img.style.display = 'block';
+      cap.innerText = caption || '';
+    };
+    
+    img.onerror = function() {
+      formatIndex++;
+      tryNextFormat();
+    };
+    
+    img.src = testUrl;
+  }
+  
+  // Mulai coba format pertama
+  tryNextFormat();
 }
 
 function closeZoomModal() {
@@ -974,6 +1072,7 @@ function closeZoomModal() {
   modal.classList.add('hidden');
   modal.classList.remove('flex');
   img.src = '';
+  img.style.display = 'none';
 }
 
 function showInfoSub(subName) {
