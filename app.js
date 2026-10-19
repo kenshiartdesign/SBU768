@@ -1324,6 +1324,29 @@ function setTab(t, btnElement) {
   }
 }
 
+// ===== LOAD STATISTIK PROFIL (DIPERBAIKI) =====
+async function loadStatistikProfil() {
+  if (!currentUser || !currentUser.username) return;
+  
+  try {
+    const url = CONFIG.GAS_URL + '?action=getStatistik&username=' + encodeURIComponent(currentUser.username.trim().toLowerCase()) + '&t=' + Date.now();
+    const res = await fetch(url);
+    const result = await res.json();
+    
+    console.log('Statistik Response:', result);
+    
+    if (result.status === 'success' && result.data) {
+      document.getElementById('statAbsenBulan').innerText = result.data.totalAbsen || 0;
+      document.getElementById('statPatroliBulan').innerText = result.data.totalPatroli || 0;
+      document.getElementById('statKejadianBulan').innerText = result.data.totalKejadian || 0;
+    } else {
+      console.error('Gagal load statistik:', result.message);
+    }
+  } catch (e) {
+    console.error('Error load statistik:', e);
+  }
+}
+
 function kembaliKePilihLokasi() {
   if (confirm('Yakin ingin mengganti lokasi kerja?\n\nAnda akan kembali ke halaman pilih lokasi.')) {
     localStorage.removeItem('sbu_lokasi');
