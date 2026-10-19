@@ -883,6 +883,31 @@ function getHariKerjaBulan(tahun, bulan) {
   return count;
 }
 
+// ===== TOGGLE FORM PATROLI & KEJADIAN =====
+function toggleFormPatroli() {
+  const form = document.getElementById('formPatroli');
+  const icon = document.getElementById('iconPatroli');
+  if (form.classList.contains('hidden')) {
+    form.classList.remove('hidden');
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    form.classList.add('hidden');
+    icon.style.transform = 'rotate(0deg)';
+  }
+}
+
+function toggleFormKejadian() {
+  const form = document.getElementById('formKejadian');
+  const icon = document.getElementById('iconKejadian');
+  if (form.classList.contains('hidden')) {
+    form.classList.remove('hidden');
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    form.classList.add('hidden');
+    icon.style.transform = 'rotate(0deg)';
+  }
+}
+
 // ===== NAVIGASI TAB =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
