@@ -742,15 +742,15 @@ async function loadSlipGaji() {
 function convertDriveUrl(url) {
   if (!url) return '';
   
-  // Jika sudah format thumbnail/uc, kembalikan apa adanya
-  if (url.includes('drive.google.com/uc') || url.includes('lh3.googleusercontent.com')) {
+  // Jika sudah format yang bisa di-embed, kembalikan
+  if (url.includes('lh3.googleusercontent.com') || url.includes('drive.google.com/uc')) {
     return url;
   }
   
   // Extract File ID dari berbagai format URL Google Drive
   let fileId = '';
   
-  // Format: https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+  // Format: https://drive.google.com/file/d/FILE_ID/view
   const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
   if (match1) fileId = match1[1];
   
@@ -765,21 +765,55 @@ function convertDriveUrl(url) {
   // Jika tidak ada File ID, kembalikan URL asli
   if (!fileId) return url;
   
-  // Konversi ke format yang bisa di-embed sebagai image
-  return 'https://lh3.googleusercontent.com/d/' + fileId;
+  // Coba multiple format untuk memastikan bisa di-load
+  return {
+    original: url,
+    fileId: fileId,
+    formats: [
+      'https://lh3.googleusercontent.com/d/' + fileId,
+      'https://drive.google.com/uc?export=view&id=' + fileId,
+      'https://drive.google.com/uc?id=' + fileId
+    ]
+  };
 }
 
-// ===== MODAL ZOOM FOTO =====
+// ===== MODAL ZOOM FOTO (DENGAN MULTIPLE FALLBACK) =====
 function openZoomModal(imageUrl, caption) {
   const modal = document.getElementById('zoomModal');
   const img = document.getElementById('zoomImage');
   const cap = document.getElementById('zoomCaption');
   
-  // Konversi URL dulu
-  img.src = convertDriveUrl(imageUrl);
-  cap.innerText = caption || '';
+  const converted = convertDriveUrl(imageUrl);
+  
+  // Reset state
+  img.style.display = 'none';
+  cap.innerText = 'Memuat foto...';
   modal.classList.remove('hidden');
   modal.classList.add('flex');
+  
+  let formatIndex = 0;
+  
+  function tryNextFormat() {
+    if (formatIndex >= converted.formats.length) {
+      // Semua format gagal, tampilkan pesan error
+      cap.innerText = '❌ Gagal memuat foto. Caption: ' + (caption || '');
+      return;
+    }
+    
+    const testUrl = converted.formats[formatIndex];
+    img.onload = function() {
+      img.style.display = 'block';
+      cap.innerText = caption || '';
+    };
+    img.onerror = function() {
+      formatIndex++;
+      tryNextFormat();
+    };
+    img.src = testUrl;
+  }
+  
+  // Mulai coba format pertama
+  tryNextFormat();
 }
 
 function closeZoomModal() {
@@ -789,6 +823,7 @@ function closeZoomModal() {
   modal.classList.add('hidden');
   modal.classList.remove('flex');
   img.src = '';
+  img.style.display = 'none';
 }
 
 // ===== REKAP PATROLI (SEMUA USER + THUMBNAIL + ZOOM) =====
