@@ -908,6 +908,42 @@ function toggleFormKejadian() {
   }
 }
 
+// ===== NAVIGASI SUB-PAGE PATROLI & KEJADIAN =====
+function openSubPatroli() {
+  // Sembunyikan card utama di tab absen
+  document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
+    if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
+      el.classList.add('hidden');
+    }
+  });
+  // Tampilkan sub-page patroli
+  document.getElementById('sub-patroli').classList.remove('hidden');
+}
+
+function openSubKejadian() {
+  // Sembunyikan card utama di tab absen
+  document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white:not(#sub-patroli):not(#sub-kejadian)').forEach(el => {
+    if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
+      el.classList.add('hidden');
+    }
+  });
+  // Tampilkan sub-page kejadian
+  document.getElementById('sub-kejadian').classList.remove('hidden');
+}
+
+function backToAbsenMenu() {
+  // Sembunyikan sub-page
+  document.getElementById('sub-patroli').classList.add('hidden');
+  document.getElementById('sub-kejadian').classList.add('hidden');
+  
+  // Tampilkan kembali semua card utama di tab absen
+  document.querySelectorAll('#tab-absen > button, #tab-absen > div.bg-white').forEach(el => {
+    if (el.id !== 'sub-patroli' && el.id !== 'sub-kejadian') {
+      el.classList.remove('hidden');
+    }
+  });
+}
+
 // ===== NAVIGASI TAB =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
