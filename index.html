@@ -998,8 +998,30 @@
     <p id="zoomCaption" class="text-white/70 text-xs mt-3 text-center"></p>
   </div>
 
-  <!-- Font Awesome Fallback Checker -->
+   <!-- Font Awesome Fallback Checker + Toggle Password -->
   <script>
+    // ===== TOGGLE PASSWORD VISIBILITY (Ditempatkan di HTML agar pasti load) =====
+    function togglePassword() {
+      const passInput = document.getElementById('inpPass');
+      const eyeIcon = document.getElementById('eyeIcon');
+      
+      if (!passInput || !eyeIcon) {
+        console.error('Element inpPass atau eyeIcon tidak ditemukan!');
+        return;
+      }
+      
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        eyeIcon.className = 'fa-solid fa-eye-slash text-sm';
+        console.log('Password: VISIBLE');
+      } else {
+        passInput.type = 'password';
+        eyeIcon.className = 'fa-solid fa-eye text-sm';
+        console.log('Password: HIDDEN');
+      }
+    }
+    
+    // ===== Font Awesome Fallback =====
     window.addEventListener('load', function() {
       setTimeout(function() {
         const testIcon = document.createElement('i');
