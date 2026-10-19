@@ -206,33 +206,41 @@
       <div id="tab-info" class="hidden space-y-4">
         
         <!-- MENU UTAMA INFO -->
-        <div id="info-menu-utama" class="space-y-3">
-          <div class="bg-white rounded-2xl p-4 shadow-sm">
-            <p class="font-bold text-sm mb-3"><i class="fa-solid fa-circle-info text-blue-500"></i> Menu Informasi</p>
-            <div class="grid grid-cols-2 gap-3">
-              <button onclick="showInfoSub('rekap')" class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                <i class="fa-solid fa-calendar-check text-2xl"></i>
-                <p class="text-[11px] font-bold">Rekap Absensi</p>
-              </button>
-              <button onclick="showInfoSub('shift')" class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                <i class="fa-solid fa-right-left text-2xl"></i>
-                <p class="text-[11px] font-bold">Tukar Shift</p>
-              </button>
-              <button onclick="showInfoSub('ijin')" class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                <i class="fa-solid fa-file-medical text-2xl"></i>
-                <p class="text-[11px] font-bold">Ijin / Sakit</p>
-              </button>
-              <button onclick="showInfoSub('riwayat')" class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
-                <p class="text-[11px] font-bold">Riwayat Pengajuan</p>
-              </button>
-              <button onclick="showInfoSub('gaji')" class="col-span-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
-                <i class="fa-solid fa-money-bill-wave text-2xl"></i>
-                <p class="text-[11px] font-bold">Slip Gaji Saya</p>
-              </button>
-            </div>
-          </div>
-        </div>
+<div id="info-menu-utama" class="space-y-3">
+  <div class="bg-white rounded-2xl p-4 shadow-sm">
+    <p class="font-bold text-sm mb-3"><i class="fa-solid fa-circle-info text-blue-500"></i> Menu Informasi</p>
+    <div class="grid grid-cols-2 gap-3">
+      <button onclick="showInfoSub('rekap')" class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-calendar-check text-2xl"></i>
+        <p class="text-[11px] font-bold">Rekap Absensi</p>
+      </button>
+      <button onclick="showInfoSub('patroli')" class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-route text-2xl"></i>
+        <p class="text-[11px] font-bold">Rekap Patroli</p>
+      </button>
+      <button onclick="showInfoSub('kejadian')" class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+        <p class="text-[11px] font-bold">Rekap Kejadian</p>
+      </button>
+      <button onclick="showInfoSub('shift')" class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-right-left text-2xl"></i>
+        <p class="text-[11px] font-bold">Tukar Shift</p>
+      </button>
+      <button onclick="showInfoSub('ijin')" class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-file-medical text-2xl"></i>
+        <p class="text-[11px] font-bold">Ijin / Sakit</p>
+      </button>
+      <button onclick="showInfoSub('riwayat')" class="bg-gradient-to-br from-slate-700 to-slate-800 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-clock-rotate-left text-2xl"></i>
+        <p class="text-[11px] font-bold">Riwayat Pengajuan</p>
+      </button>
+      <button onclick="showInfoSub('gaji')" class="col-span-2 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-4 shadow-md active:scale-95 transition flex flex-col items-center gap-2">
+        <i class="fa-solid fa-money-bill-wave text-2xl"></i>
+        <p class="text-[11px] font-bold">Slip Gaji Saya</p>
+      </button>
+    </div>
+  </div>
+</div>
 
         <!-- SUB: REKAP ABSENSI -->
         <div id="info-sub-rekap" class="hidden space-y-4">
@@ -416,6 +424,146 @@
           </div>
         </div>
 
+        <!-- SUB: REKAP PATROLI -->
+<div id="info-sub-patroli" class="hidden space-y-3">
+  <div class="bg-white rounded-2xl p-4 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-bold text-base flex items-center gap-2">
+        <i class="fa-solid fa-route text-amber-600"></i> Rekap Patroli
+      </p>
+      <div class="flex gap-2">
+        <button onclick="backToInfoMenu()" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+          <i class="fa-solid fa-arrow-left"></i> Kembali
+        </button>
+        <button onclick="loadRekapPatroli()" class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+          <i class="fa-solid fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+    </div>
+    
+    <!-- Statistik Patroli -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-3">
+        <p class="text-xs text-slate-500 font-medium">Total Patroli</p>
+        <p id="statTotalPatroli" class="text-2xl font-extrabold text-amber-600 leading-tight">0</p>
+      </div>
+      <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-3">
+        <p class="text-xs text-slate-500 font-medium">Bulan Ini</p>
+        <p id="statPatroliBulanIni" class="text-2xl font-extrabold text-blue-600 leading-tight">0</p>
+      </div>
+    </div>
+    
+    <!-- Filter Bulan -->
+    <div class="mb-4">
+      <select id="filterBulanPatroli" onchange="loadRekapPatroli()" class="w-full h-11 bg-slate-50 rounded-lg px-3 text-sm border border-slate-200 outline-none font-bold text-slate-700">
+        <option value="all">Semua Bulan</option>
+        <option value="2025-01">Januari 2025</option>
+        <option value="2025-02">Februari 2025</option>
+        <option value="2025-03">Maret 2025</option>
+        <option value="2025-04">April 2025</option>
+        <option value="2025-05">Mei 2025</option>
+        <option value="2025-06">Juni 2025</option>
+        <option value="2025-07">Juli 2025</option>
+        <option value="2025-08">Agustus 2025</option>
+        <option value="2025-09">September 2025</option>
+        <option value="2025-10">Oktober 2025</option>
+        <option value="2025-11">November 2025</option>
+        <option value="2025-12">Desember 2025</option>
+        <option value="2026-01">Januari 2026</option>
+        <option value="2026-02">Februari 2026</option>
+        <option value="2026-03">Maret 2026</option>
+        <option value="2026-04">April 2026</option>
+        <option value="2026-05">Mei 2026</option>
+        <option value="2026-06">Juni 2026</option>
+        <option value="2026-07">Juli 2026</option>
+        <option value="2026-08">Agustus 2026</option>
+        <option value="2026-09">September 2026</option>
+        <option value="2026-10">Oktober 2026</option>
+        <option value="2026-11">November 2026</option>
+        <option value="2026-12">Desember 2026</option>
+      </select>
+    </div>
+    
+    <!-- List Patroli -->
+    <div class="space-y-2">
+      <p class="font-bold text-xs text-slate-600 mb-2">Riwayat Patroli</p>
+      <div id="listRekapPatroli" class="space-y-2">
+        <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUB: REKAP KEJADIAN -->
+<div id="info-sub-kejadian" class="hidden space-y-3">
+  <div class="bg-white rounded-2xl p-4 shadow-sm">
+    <div class="flex items-center justify-between mb-4">
+      <p class="font-bold text-base flex items-center gap-2">
+        <i class="fa-solid fa-triangle-exclamation text-red-600"></i> Rekap Kejadian
+      </p>
+      <div class="flex gap-2">
+        <button onclick="backToInfoMenu()" class="bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+          <i class="fa-solid fa-arrow-left"></i> Kembali
+        </button>
+        <button onclick="loadRekapKejadian()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+          <i class="fa-solid fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+    </div>
+    
+    <!-- Statistik Kejadian -->
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="bg-red-50 border-l-4 border-red-500 rounded-lg p-3">
+        <p class="text-xs text-slate-500 font-medium">Total Kejadian</p>
+        <p id="statTotalKejadian" class="text-2xl font-extrabold text-red-600 leading-tight">0</p>
+      </div>
+      <div class="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-3">
+        <p class="text-xs text-slate-500 font-medium">Bulan Ini</p>
+        <p id="statKejadianBulanIni" class="text-2xl font-extrabold text-orange-600 leading-tight">0</p>
+      </div>
+    </div>
+    
+    <!-- Filter Bulan -->
+    <div class="mb-4">
+      <select id="filterBulanKejadian" onchange="loadRekapKejadian()" class="w-full h-11 bg-slate-50 rounded-lg px-3 text-sm border border-slate-200 outline-none font-bold text-slate-700">
+        <option value="all">Semua Bulan</option>
+        <option value="2025-01">Januari 2025</option>
+        <option value="2025-02">Februari 2025</option>
+        <option value="2025-03">Maret 2025</option>
+        <option value="2025-04">April 2025</option>
+        <option value="2025-05">Mei 2025</option>
+        <option value="2025-06">Juni 2025</option>
+        <option value="2025-07">Juli 2025</option>
+        <option value="2025-08">Agustus 2025</option>
+        <option value="2025-09">September 2025</option>
+        <option value="2025-10">Oktober 2025</option>
+        <option value="2025-11">November 2025</option>
+        <option value="2025-12">Desember 2025</option>
+        <option value="2026-01">Januari 2026</option>
+        <option value="2026-02">Februari 2026</option>
+        <option value="2026-03">Maret 2026</option>
+        <option value="2026-04">April 2026</option>
+        <option value="2026-05">Mei 2026</option>
+        <option value="2026-06">Juni 2026</option>
+        <option value="2026-07">Juli 2026</option>
+        <option value="2026-08">Agustus 2026</option>
+        <option value="2026-09">September 2026</option>
+        <option value="2026-10">Oktober 2026</option>
+        <option value="2026-11">November 2026</option>
+        <option value="2026-12">Desember 2026</option>
+      </select>
+    </div>
+    
+    <!-- List Kejadian -->
+    <div class="space-y-2">
+      <p class="font-bold text-xs text-slate-600 mb-2">Riwayat Kejadian</p>
+      <div id="listRekapKejadian" class="space-y-2">
+        <p class="text-center text-slate-400 text-xs py-4">Memuat data...</p>
+      </div>
+    </div>
+  </div>
+</div>
+        
       </div>
 
       <!-- ============ TAB PROFIL ============ -->
