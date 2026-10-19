@@ -777,17 +777,19 @@ function convertDriveUrl(url) {
   };
 }
 
-// ===== MODAL ZOOM FOTO (DENGAN MULTIPLE FALLBACK) =====
+// ===== MODAL ZOOM FOTO (DENGAN LOADING STATE) =====
 function openZoomModal(imageUrl, caption) {
   const modal = document.getElementById('zoomModal');
   const img = document.getElementById('zoomImage');
+  const loading = document.getElementById('zoomLoading');
   const cap = document.getElementById('zoomCaption');
   
   const converted = convertDriveUrl(imageUrl);
   
-  // Reset state
+  // Show loading
+  loading.classList.remove('hidden');
   img.style.display = 'none';
-  cap.innerText = 'Memuat foto...';
+  cap.innerText = '';
   modal.classList.remove('hidden');
   modal.classList.add('flex');
   
@@ -795,20 +797,25 @@ function openZoomModal(imageUrl, caption) {
   
   function tryNextFormat() {
     if (formatIndex >= converted.formats.length) {
-      // Semua format gagal, tampilkan pesan error
-      cap.innerText = '❌ Gagal memuat foto. Caption: ' + (caption || '');
+      // Semua format gagal
+      loading.classList.add('hidden');
+      cap.innerText = '❌ Gagal memuat foto';
       return;
     }
     
     const testUrl = converted.formats[formatIndex];
+    
     img.onload = function() {
+      loading.classList.add('hidden');
       img.style.display = 'block';
       cap.innerText = caption || '';
     };
+    
     img.onerror = function() {
       formatIndex++;
       tryNextFormat();
     };
+    
     img.src = testUrl;
   }
   
