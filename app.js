@@ -204,18 +204,26 @@ async function showMainScreen() {
   sm.classList.add('flex');
   
   document.getElementById('namaTop').innerText = currentUser.nama;
-  document.getElementById('avatarTop').innerText = currentUser.avatar;
   document.getElementById('lokasiTop').innerText = selectedLokasi.nama_lokasi;
   document.getElementById('infoLokasiAbsen').innerText = selectedLokasi.nama_lokasi;
   
-  document.getElementById('namaProfil').innerText = currentUser.nama;
-  document.getElementById('avatarProfil').innerText = currentUser.avatar;
-  document.getElementById('roleProfil').innerText = currentUser.role.toUpperCase();
+  // Update avatar di header (foto atau inisial)
+  updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'avatarTopImg', 'avatarTopText');
+  
+  // Update profil
+  document.getElementById('profilNamaHeader').innerText = currentUser.nama;
+  document.getElementById('profilRoleHeader').innerText = currentUser.role.toUpperCase();
   document.getElementById('profilNama').innerText = currentUser.nama;
+  document.getElementById('profilUsername').innerText = currentUser.username;
+  document.getElementById('profilNik').innerText = currentUser.nik || '-';
+  document.getElementById('profilRole').innerText = currentUser.role.toUpperCase();
   document.getElementById('profilAlamat').innerText = currentUser.alamat || '-';
   document.getElementById('profilTlp').innerText = currentUser.no_tlp || '-';
   document.getElementById('profilEmail').innerText = currentUser.email || '-';
-  document.getElementById('profilNik').innerText = currentUser.nik || '-';
+  document.getElementById('profilLokasi').innerText = selectedLokasi.nama_lokasi;
+  
+  // Update avatar di halaman profil
+  updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
   
   updateAbsenUI();
   
@@ -244,8 +252,10 @@ async function showMainScreen() {
     await checkAbsenStatus();
   }
   
+  // Load data di background
   loadSlipGaji();
   loadPengajuanUser();
+  loadStatistikProfil(); // Load statistik
 }
 
 async function checkAbsenStatus() {
@@ -1294,11 +1304,23 @@ function setTab(t, btnElement) {
   
   if (t === 'info') backToInfoMenu();
   if (t === 'profil') {
+    // Update data profil
+    document.getElementById('profilNamaHeader').innerText = currentUser.nama;
+    document.getElementById('profilRoleHeader').innerText = currentUser.role.toUpperCase();
     document.getElementById('profilNama').innerText = currentUser.nama;
+    document.getElementById('profilUsername').innerText = currentUser.username;
+    document.getElementById('profilNik').innerText = currentUser.nik || '-';
+    document.getElementById('profilRole').innerText = currentUser.role.toUpperCase();
     document.getElementById('profilAlamat').innerText = currentUser.alamat || '-';
     document.getElementById('profilTlp').innerText = currentUser.no_tlp || '-';
     document.getElementById('profilEmail').innerText = currentUser.email || '-';
-    document.getElementById('profilNik').innerText = currentUser.nik || '-';
+    document.getElementById('profilLokasi').innerText = selectedLokasi ? selectedLokasi.nama_lokasi : '-';
+    
+    // Update avatar
+    updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
+    
+    // Load statistik
+    loadStatistikProfil();
   }
 }
 
@@ -1321,6 +1343,109 @@ function doLogout() {
     localStorage.clear();
     location.reload();
   }
+}
+
+// ===== UPDATE AVATAR DI HEADER (Foto atau Inisial) =====
+function updateAvatarDisplay(fotoUrl, nama, elementIdImg, elementIdText) {
+  const imgEl = document.getElementById(elementIdImg);
+  const textEl = document.getElementById(elementIdText);
+  
+  if (fotoUrl && fotoUrl !== '' && fotoUrl !== 'null') {
+    // Konversi URL Google Drive ke format yang bisa di-embed
+    const thumbUrl = getThumbnailUrl(fotoUrl);
+    imgEl.src = thumbUrl;
+    imgEl.classList.remove('hidden');
+    textEl.classList.add('hidden');
+    
+    // Handle error load
+    imgEl.onerror = function() {
+      imgEl.classList.add('hidden');
+      textEl.classList.remove('hidden');
+      textEl.innerText = String(nama || '-').substring(0, 2).toUpperCase();
+    };
+  } else {
+    imgEl.classList.add('hidden');
+    textEl.classList.remove('hidden');
+    textEl.innerText = String(nama || '-').substring(0, 2).toUpperCase();
+  }
+}
+
+// ===== HANDLE FOTO PROFIL =====
+async function handleFotoProfilChange(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  showLoading(true);
+  
+  try {
+    // Compress foto
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async function(e) {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = async function() {
+        // Compress ke ukuran yang wajar (max 400px)
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxSize = 400;
+        
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height * maxSize) / width);
+            width = maxSize;
+          } else {
+            width = Math.round((width * maxSize) / height);
+            height = maxSize;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Kirim ke server
+        const payload = {
+          action: 'uploadFotoProfil',
+          username: currentUser.username,
+          foto_base64: compressedBase64
+        };
+        
+        const response = await fetch(CONFIG.GAS_URL, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+          // Update data user
+          currentUser.foto_url = result.foto_url;
+          localStorage.setItem('sbu_user', JSON.stringify(currentUser));
+          
+          // Update tampilan
+          updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'avatarTopImg', 'avatarTopText');
+          updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
+          
+          alert('✅ Foto profil berhasil diupdate!');
+        } else {
+          alert('❌ Gagal: ' + result.message);
+        }
+        
+        showLoading(false);
+      };
+    };
+  } catch (err) {
+    console.error('Error upload foto profil:', err);
+    alert('❌ Gagal upload foto: ' + err.message);
+    showLoading(false);
+  }
+  
+  // Reset input agar bisa upload foto yang sama lagi
+  event.target.value = '';
 }
 
 // ===== INIT =====
