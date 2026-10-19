@@ -1484,6 +1484,20 @@ function clearNotificationBadge() {
   localStorage.setItem('sbu_last_notif_check', Date.now().toString());
 }
 
+// ===== TOGGLE PASSWORD VISIBILITY =====
+function togglePassword() {
+  const passInput = document.getElementById('inpPass');
+  const eyeIcon = document.getElementById('eyeIcon');
+  
+  if (passInput.type === 'password') {
+    passInput.type = 'text';
+    eyeIcon.className = 'fa-solid fa-eye-slash text-sm';
+  } else {
+    passInput.type = 'password';
+    eyeIcon.className = 'fa-solid fa-eye text-sm';
+  }
+}
+
 // ===== NAVIGASI TAB =====
 function setTab(t, btnElement) {
   document.querySelectorAll('[id^="tab-"]').forEach(e => e.classList.add('hidden'));
