@@ -180,6 +180,94 @@ function toggleDarkMode() {
   showToast(isDark ? '🌙 Dark Mode Aktif' : '☀️ Light Mode Aktif', 'info');
 }
 
+// ===== PULL TO REFRESH (SIMPLE - NO SPINNER) =====
+// Refresh data di tab yang sedang aktif saja, tidak pindah tab
+function initPullToRefresh() {
+  const content = document.getElementById('mainContent');
+  if (!content) return;
+  
+  let startY = 0;
+  let currentY = 0;
+  let isPulling = false;
+  let isRefreshing = false;
+  const THRESHOLD = 60;
+  
+  content.addEventListener('touchstart', (e) => {
+    // Hanya aktif jika scroll di posisi paling atas
+    if (content.scrollTop <= 5 && !isRefreshing) {
+      startY = e.touches[0].clientY;
+      isPulling = true;
+    }
+  }, { passive: true });
+  
+  content.addEventListener('touchmove', (e) => {
+    if (!isPulling || isRefreshing) return;
+    currentY = e.touches[0].clientY;
+  }, { passive: true });
+  
+  content.addEventListener('touchend', () => {
+    if (!isPulling || isRefreshing) {
+      isPulling = false;
+      return;
+    }
+    isPulling = false;
+    
+    const diff = currentY - startY;
+    
+    // Jika pull cukup jauh, trigger refresh
+    if (diff > THRESHOLD) {
+      isRefreshing = true;
+      
+      // Refresh data sesuai tab yang AKTIF saat ini
+      refreshCurrentTab().then(() => {
+        setTimeout(() => {
+          isRefreshing = false;
+          showToast('🔄 Data diperbarui', 'success');
+        }, 500);
+      }).catch(() => {
+        isRefreshing = false;
+      });
+    }
+  });
+}
+
+// Refresh data di tab yang sedang aktif - TIDAK pindah tab
+async function refreshCurrentTab() {
+  // Cek tab mana yang sedang aktif (tidak hidden)
+  const activeTab = document.querySelector('[id^="tab-"]:not(.hidden)');
+  if (!activeTab) return;
+  
+  const tabId = activeTab.id; // 'tab-absen', 'tab-info', atau 'tab-profil'
+  
+  // Refresh sesuai tab aktif - TIDAK mengubah tab yang terlihat
+  if (tabId === 'tab-absen') {
+    await checkAbsenStatus();
+    updateAbsenUI();
+  } 
+  else if (tabId === 'tab-info') {
+    // Cek sub-page mana yang aktif di dalam tab Info
+    const activeSub = document.querySelector('[id^="info-sub-"]:not(.hidden)');
+    if (activeSub) {
+      const subName = activeSub.id.replace('info-sub-', '');
+      if (subName === 'rekap') loadRekapAbsensi();
+      else if (subName === 'patroli') loadRekapPatroli();
+      else if (subName === 'kejadian') loadRekapKejadian();
+      else if (subName === 'riwayat') loadPengajuanUser();
+      else if (subName === 'gaji') loadSlipGaji();
+    } else {
+      // Jika di menu utama info, refresh pengajuan & gaji
+      loadPengajuanUser();
+      loadSlipGaji();
+    }
+  } 
+  else if (tabId === 'tab-profil') {
+    loadStatistikProfil();
+  }
+  
+  // Refresh notifikasi badge juga
+  checkNotifications();
+}
+
 // ===== LOGIN & LOKASI =====
 async function doLogin() {
   const u = document.getElementById('inpUser').value.trim();
@@ -675,7 +763,7 @@ function openCamera(action) {
   if (timemark) {
     const now = new Date();
     const pasaran = hitungHariPasaran();
-    timemark.innerText = ' ' + (selectedLokasi ? selectedLokasi.nama_lokasi : '-') + ' | ⏰ ' + now.toLocaleDateString('id-ID') + ' (' + pasaran + ') ' + now.toLocaleTimeString('id-ID');
+    timemark.innerText = '📍 ' + (selectedLokasi ? selectedLokasi.nama_lokasi : '-') + ' | ⏰ ' + now.toLocaleDateString('id-ID') + ' (' + pasaran + ') ' + now.toLocaleTimeString('id-ID');
   }
   modal.classList.remove('hidden');
   modal.classList.add('flex');
@@ -750,7 +838,7 @@ async function submitPatroliFinal() {
     document.getElementById('patroliLokasi').value = '';
     document.getElementById('patroliCatatan').value = '';
     resetBtn('btnPatroli1', '📷 Foto 1');
-    resetBtn('btnPatroli2', '📷 Foto 2');
+    resetBtn('btnPatroli2', ' Foto 2');
   } else {
     showToast('Gagal: ' + result.message, 'error');
   }
@@ -949,11 +1037,11 @@ async function loadPengajuanUser() {
     } else {
       listEl.innerHTML = allPengajuan.map(p => {
         let statusColor = p.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : p.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '';
+        let statusIcon = p.status === 'PENDING' ? '⏳' : p.status === 'APPROVED' ? '✅' : '❌';
         if (p.type === 'IJIN') {
           return '<div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-blue-600"><i class="fa-solid fa-file-medical"></i> ' + p.jenis + '</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600 dark:text-slate-300">📅 ' + p.tanggal_mulai + ' s/d ' + p.tanggal_selesai + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">💬 ' + (p.keterangan || '-') + '</p></div>';
         } else {
-          return '<div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600 dark:text-slate-300">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1"> Pengganti: ' + p.pengganti + '</p></div>';
+          return '<div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600"><div class="flex justify-between items-start mb-1"><p class="font-bold text-xs text-purple-600"><i class="fa-solid fa-right-left"></i> Tukar Shift</p><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ' + statusColor + '">' + statusIcon + ' ' + p.status + '</span></div><p class="text-[10px] text-slate-600 dark:text-slate-300">📅 ' + p.tanggal + ' | ' + p.shift_lama + ' → ' + p.shift_baru + '</p><p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">👤 Pengganti: ' + p.pengganti + '</p></div>';
         }
       }).join('');
     }
@@ -1216,10 +1304,10 @@ async function loadRekapPatroli() {
           <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
               <p class="font-bold text-xs text-amber-600"><i class="fa-solid fa-route"></i> ${p.lokasi_patroli || '-'}</p>
-              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">👤 <b>${p.nama_user || p.username}</b> •  ${tglStr} • ⏰ ${jamStr}</p>
             </div>
           </div>
-          <p class="text-[10px] text-slate-600 dark:text-slate-300 mb-1">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-600 dark:text-slate-300 mb-1"> ${p.nama_lokasi || '-'}</p>
           <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">💬 ${p.keterangan || 'Tidak ada keterangan'}</p>
           ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
@@ -1287,7 +1375,7 @@ async function loadRekapKejadian() {
             <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
           </div>
           <p class="text-[10px] text-slate-600 dark:text-slate-300 mb-1">📍 ${k.lokasi_kejadian || '-'}</p>
-          <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2">💬 ${k.kronologi || 'Tidak ada kronologi'}</p>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mb-2"> ${k.kronologi || 'Tidak ada kronologi'}</p>
           ${(foto1Html || foto2Html) ? '<div class="flex gap-2">' + foto1Html + foto2Html + '</div>' : ''}
         </div>
       `;
@@ -1346,89 +1434,6 @@ function backToAbsenMenu() {
       el.classList.remove('hidden');
     }
   });
-}
-
-// ===== PULL TO REFRESH =====
-function initPullToRefresh() {
-  const content = document.getElementById('mainContent');
-  const indicator = document.getElementById('ptrIndicator');
-  if (!content || !indicator) return;
-  
-  let startY = 0;
-  let currentY = 0;
-  let isPulling = false;
-  let isRefreshing = false;
-  const THRESHOLD = 80;
-  
-  content.addEventListener('touchstart', (e) => {
-    if (content.scrollTop === 0 && !isRefreshing) {
-      startY = e.touches[0].clientY;
-      isPulling = true;
-    }
-  }, { passive: true });
-  
-  content.addEventListener('touchmove', (e) => {
-    if (!isPulling || isRefreshing) return;
-    currentY = e.touches[0].clientY;
-    const diff = currentY - startY;
-    
-    if (diff > 0 && diff <= THRESHOLD * 2) {
-      const progress = Math.min(diff / THRESHOLD, 1);
-      indicator.style.transform = `translateX(-50%) translateY(${-100 + (progress * 110)}px)`;
-      indicator.style.opacity = progress;
-    }
-  }, { passive: true });
-  
-  content.addEventListener('touchend', () => {
-    if (!isPulling || isRefreshing) return;
-    isPulling = false;
-    
-    const diff = currentY - startY;
-    if (diff > THRESHOLD) {
-      isRefreshing = true;
-      indicator.classList.add('active');
-      
-      refreshCurrentTab().then(() => {
-        setTimeout(() => {
-          indicator.classList.remove('active');
-          indicator.style.transform = 'translateX(-50%) translateY(-100px)';
-          indicator.style.opacity = 0;
-          isRefreshing = false;
-          showToast('🔄 Data berhasil diperbarui', 'success');
-        }, 800);
-      });
-    } else {
-      indicator.style.transform = 'translateX(-50%) translateY(-100px)';
-      indicator.style.opacity = 0;
-    }
-  });
-}
-
-async function refreshCurrentTab() {
-  const activeTab = document.querySelector('[id^="tab-"]:not(.hidden)');
-  if (!activeTab) return;
-  
-  const tabId = activeTab.id;
-  
-  if (tabId === 'tab-absen') {
-    await checkAbsenStatus();
-    updateAbsenUI();
-  } else if (tabId === 'tab-info') {
-    const activeSub = document.querySelector('[id^="info-sub-"]:not(.hidden)');
-    if (activeSub) {
-      const subName = activeSub.id.replace('info-sub-', '');
-      if (subName === 'rekap') loadRekapAbsensi();
-      else if (subName === 'patroli') loadRekapPatroli();
-      else if (subName === 'kejadian') loadRekapKejadian();
-      else if (subName === 'riwayat') loadPengajuanUser();
-      else if (subName === 'gaji') loadSlipGaji();
-    } else {
-      loadPengajuanUser();
-      loadSlipGaji();
-    }
-  } else if (tabId === 'tab-profil') {
-    loadStatistikProfil();
-  }
 }
 
 // ===== BADGE NOTIFIKASI =====
