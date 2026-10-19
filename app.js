@@ -1319,7 +1319,7 @@ function setTab(t, btnElement) {
     // Update avatar
     updateAvatarDisplay(currentUser.foto_url, currentUser.nama, 'profilFotoImg', 'profilFotoText');
     
-    // Load statistik
+    // Load statistik (PENTING: panggil setiap kali tab profil dibuka)
     loadStatistikProfil();
   }
 }
