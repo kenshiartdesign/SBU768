@@ -738,15 +738,13 @@ async function loadSlipGaji() {
   }
 }
 
-// ===== REKAP PATROLI =====
+// ===== REKAP PATROLI (SEMUA USER + THUMBNAIL + ZOOM) =====
 async function loadRekapPatroli() {
-  if (!currentUser) return;
-  
   const filterBulan = document.getElementById('filterBulanPatroli').value;
   const listEl = document.getElementById('listRekapPatroli');
   
   try {
-    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapPatroli&username=' + currentUser.username + '&bulan=' + filterBulan);
+    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapPatroli&bulan=' + filterBulan + '&t=' + Date.now());
     const result = await res.json();
     
     if (result.status !== 'success') {
@@ -758,7 +756,6 @@ async function loadRekapPatroli() {
     const total = result.total || 0;
     const bulanIni = result.bulanIni || 0;
     
-    // Update statistik
     document.getElementById('statTotalPatroli').innerText = total;
     document.getElementById('statPatroliBulanIni').innerText = bulanIni;
     
@@ -767,26 +764,25 @@ async function loadRekapPatroli() {
       return;
     }
     
-    // Render list patroli
     listEl.innerHTML = data.map(p => {
       const tgl = new Date(p.timestamp);
       const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
       const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
       
+      const foto1Thumb = p.foto1 ? `<img src="${p.foto1}" onclick="openZoomModal('${p.foto1}', 'Foto 1 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '<div class="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-[10px]">No Foto</div>';
+      const foto2Thumb = p.foto2 ? `<img src="${p.foto2}" onclick="openZoomModal('${p.foto2}', 'Foto 2 - ${p.lokasi_patroli || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-slate-200 cursor-pointer active:scale-95 transition">` : '';
+      
       return `
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div class="flex justify-between items-start mb-2">
-            <div>
+            <div class="flex-1">
               <p class="font-bold text-xs text-amber-600"><i class="fa-solid fa-route"></i> ${p.lokasi_patroli || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">📅 ${tglStr} • ⏰ ${jamStr}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${p.nama_user || p.username}</b> • 📅 ${tglStr} • ⏰ ${jamStr}</p>
             </div>
           </div>
-          <p class="text-[10px] text-slate-600 mb-2">📍 ${p.nama_lokasi || '-'}</p>
+          <p class="text-[10px] text-slate-600 mb-1">📍 ${p.nama_lokasi || '-'}</p>
           <p class="text-[10px] text-slate-500 mb-2"> ${p.keterangan || 'Tidak ada keterangan'}</p>
-          <div class="flex gap-2">
-            ${p.foto1 ? `<a href="${p.foto1}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Foto 1</a>` : ''}
-            ${p.foto2 ? `<a href="${p.foto2}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Foto 2</a>` : ''}
-          </div>
+          ${(p.foto1 || p.foto2) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
         </div>
       `;
     }).join('');
@@ -797,15 +793,13 @@ async function loadRekapPatroli() {
   }
 }
 
-// ===== REKAP KEJADIAN =====
+// ===== REKAP KEJADIAN (SEMUA USER + THUMBNAIL + ZOOM) =====
 async function loadRekapKejadian() {
-  if (!currentUser) return;
-  
   const filterBulan = document.getElementById('filterBulanKejadian').value;
   const listEl = document.getElementById('listRekapKejadian');
   
   try {
-    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapKejadian&username=' + currentUser.username + '&bulan=' + filterBulan);
+    const res = await fetch(CONFIG.GAS_URL + '?action=getRekapKejadian&bulan=' + filterBulan + '&t=' + Date.now());
     const result = await res.json();
     
     if (result.status !== 'success') {
@@ -817,7 +811,6 @@ async function loadRekapKejadian() {
     const total = result.total || 0;
     const bulanIni = result.bulanIni || 0;
     
-    // Update statistik
     document.getElementById('statTotalKejadian').innerText = total;
     document.getElementById('statKejadianBulanIni').innerText = bulanIni;
     
@@ -826,7 +819,6 @@ async function loadRekapKejadian() {
       return;
     }
     
-    // Render list kejadian
     listEl.innerHTML = data.map(k => {
       const tgl = new Date(k.timestamp);
       const tglStr = tgl.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -835,21 +827,21 @@ async function loadRekapKejadian() {
       const statusColor = k.status === 'OPEN' ? 'bg-amber-100 text-amber-700' : 
                           k.status === 'CLOSED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700';
       
+      const foto1Thumb = k.foto1 ? `<img src="${k.foto1}" onclick="openZoomModal('${k.foto1}', 'Bukti 1 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      const foto2Thumb = k.foto2 ? `<img src="${k.foto2}" onclick="openZoomModal('${k.foto2}', 'Bukti 2 - ${k.jenis_kejadian || ''}')" class="w-16 h-16 rounded-lg object-cover border-2 border-red-200 cursor-pointer active:scale-95 transition">` : '';
+      
       return `
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
           <div class="flex justify-between items-start mb-2">
-            <div>
+            <div class="flex-1">
               <p class="font-bold text-xs text-red-600"><i class="fa-solid fa-triangle-exclamation"></i> ${k.jenis_kejadian || '-'}</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">📅 ${tglStr} • ⏰ ${jamStr}</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">👤 <b>${k.nama_user || k.username}</b> • 📅 ${tglStr} •  ${jamStr}</p>
             </div>
             <span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${statusColor}">${k.status || 'OPEN'}</span>
           </div>
-          <p class="text-[10px] text-slate-600 mb-2">📍 ${k.lokasi_kejadian || '-'}</p>
+          <p class="text-[10px] text-slate-600 mb-1">📍 ${k.lokasi_kejadian || '-'}</p>
           <p class="text-[10px] text-slate-500 mb-2"> ${k.kronologi || 'Tidak ada kronologi'}</p>
-          <div class="flex gap-2">
-            ${k.foto1 ? `<a href="${k.foto1}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Bukti 1</a>` : ''}
-            ${k.foto2 ? `<a href="${k.foto2}" target="_blank" class="flex-1 bg-blue-100 text-blue-700 text-[9px] font-bold py-1 px-2 rounded-lg text-center"><i class="fa-solid fa-image"></i> Bukti 2</a>` : ''}
-          </div>
+          ${(k.foto1 || k.foto2) ? '<div class="flex gap-2">' + foto1Thumb + foto2Thumb + '</div>' : ''}
         </div>
       `;
     }).join('');
@@ -858,6 +850,27 @@ async function loadRekapKejadian() {
     console.error('Gagal load rekap kejadian:', e);
     listEl.innerHTML = '<p class="text-center text-red-400 text-xs py-4">Error: ' + e.message + '</p>';
   }
+}
+
+// ===== MODAL ZOOM FOTO =====
+function openZoomModal(imageUrl, caption) {
+  const modal = document.getElementById('zoomModal');
+  const img = document.getElementById('zoomImage');
+  const cap = document.getElementById('zoomCaption');
+  
+  img.src = imageUrl;
+  cap.innerText = caption || '';
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeZoomModal() {
+  const modal = document.getElementById('zoomModal');
+  const img = document.getElementById('zoomImage');
+  
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  img.src = '';
 }
 
 function showInfoSub(subName) {
