@@ -781,7 +781,7 @@
 
       </div>
 
-      <!-- ============ TAB PROFIL ============ -->
+            <!-- ============ TAB PROFIL ============ -->
       <div id="tab-profil" class="hidden space-y-4 animate-fade-in">
         
         <!-- Card Foto Profil -->
@@ -822,11 +822,16 @@
           </div>
         </div>
 
-        <!-- Card Info Pribadi -->
+        <!-- Card Info Pribadi (Dengan Tombol Edit) -->
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p class="font-bold text-sm mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-user text-blue-500"></i> Info Pribadi
-          </p>
+          <div class="flex items-center justify-between mb-3">
+            <p class="font-bold text-sm flex items-center gap-2">
+              <i class="fa-solid fa-user text-blue-500"></i> Info Pribadi
+            </p>
+            <button onclick="openModalEditProfil()" class="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+          </div>
           <div class="space-y-3">
             <div class="flex items-start gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
               <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
@@ -855,7 +860,7 @@
                 <p id="profilNik" class="text-sm font-bold text-slate-700 dark:text-slate-200">-</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
+            <div class="flex items-start gap-3">
               <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center flex-shrink-0">
                 <i class="fa-solid fa-briefcase text-amber-600 text-sm"></i>
               </div>
@@ -867,11 +872,16 @@
           </div>
         </div>
 
-        <!-- Card Info Kontak -->
+        <!-- Card Info Kontak (Dengan Tombol Edit) -->
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
-          <p class="font-bold text-sm mb-3 flex items-center gap-2">
-            <i class="fa-solid fa-address-book text-green-500"></i> Info Kontak
-          </p>
+          <div class="flex items-center justify-between mb-3">
+            <p class="font-bold text-sm flex items-center gap-2">
+              <i class="fa-solid fa-address-book text-green-500"></i> Info Kontak
+            </p>
+            <button onclick="openModalEditKontak()" class="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+              <i class="fa-solid fa-pen-to-square"></i> Edit
+            </button>
+          </div>
           <div class="space-y-3">
             <div class="flex items-start gap-3 pb-3 border-b border-slate-100 dark:border-slate-700">
               <div class="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0">
@@ -903,6 +913,26 @@
           </div>
         </div>
 
+        <!-- Card Ganti Password (BARU) -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <p class="font-bold text-sm flex items-center gap-2">
+              <i class="fa-solid fa-key text-purple-500"></i> Ganti Password
+            </p>
+            <button onclick="openModalGantiPassword()" class="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+              <i class="fa-solid fa-lock-open"></i> Ubah
+            </button>
+          </div>
+          <div class="bg-slate-50 dark:bg-slate-700 rounded-xl p-3 flex items-center gap-3">
+            <i class="fa-solid fa-shield-halved text-slate-400 text-lg"></i>
+            <div class="flex-1">
+              <p class="text-[10px] font-bold text-slate-400 uppercase">Keamanan Akun</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Ubah password secara berkala untuk keamanan</p>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-400"></i>
+          </div>
+        </div>
+
         <!-- Card Lokasi Kerja -->
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-sm">
           <p class="font-bold text-sm mb-3 flex items-center gap-2">
@@ -915,6 +945,7 @@
               <p id="profilLokasi" class="text-sm font-bold text-blue-700 dark:text-blue-300">-</p>
             </div>
           </div>
+          <p class="text-[10px] text-slate-400 mt-2 text-center">Lokasi kerja ditentukan oleh Admin/HRD</p>
         </div>
 
         <!-- Tombol Logout -->
@@ -925,7 +956,6 @@
 
         <p class="text-center text-[10px] text-slate-400 pb-4">PT SBU Security Management System v3.0</p>
       </div>
-    </div>
 
     <!-- Bottom Nav 3 Menu (Modern) dengan Badge -->
     <div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex p-2 pb-3 gap-2 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.05)] z-40">
@@ -1076,7 +1106,162 @@
     </button>
   </div>
 </div>
-  
+
+  <!-- Modal Edit Info Pribadi -->
+  <div id="modalEditProfil" class="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-user-pen text-blue-500"></i> Edit Info Pribadi
+        </h3>
+        <button onclick="closeModalEditProfil()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Nama Lengkap</label>
+          <input id="editNama" type="text" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-blue-500 mt-1">
+        </div>
+        
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">NIK</label>
+          <input id="editNik" type="text" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-blue-500 mt-1">
+        </div>
+        
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Jabatan</label>
+          <select id="editRole" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-blue-500 mt-1 font-bold">
+            <option value="satpam">Satpam</option>
+            <option value="admin">Admin</option>
+            <option value="hrd">HRD</option>
+            <option value="supervisor">Supervisor</option>
+          </select>
+        </div>
+        
+        <div class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+          <p class="text-[10px] text-amber-700 dark:text-amber-300 font-bold">
+            <i class="fa-solid fa-circle-info"></i> Username tidak dapat diubah
+          </p>
+        </div>
+      </div>
+      
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModalEditProfil()" class="flex-1 h-11 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold active:scale-95 transition">
+          Batal
+        </button>
+        <button onclick="saveEditProfil()" class="flex-1 h-11 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">
+          <i class="fa-solid fa-save mr-1"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Info Kontak -->
+  <div id="modalEditKontak" class="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-address-book text-green-500"></i> Edit Info Kontak
+        </h3>
+        <button onclick="closeModalEditKontak()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Alamat</label>
+          <textarea id="editAlamat" rows="3" class="w-full bg-slate-50 dark:bg-slate-700 rounded-xl px-4 py-3 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-green-500 mt-1 resize-none"></textarea>
+        </div>
+        
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">No. Telepon</label>
+          <input id="editTlp" type="tel" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-green-500 mt-1">
+        </div>
+        
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Email</label>
+          <input id="editEmail" type="email" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-green-500 mt-1">
+        </div>
+      </div>
+      
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModalEditKontak()" class="flex-1 h-11 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold active:scale-95 transition">
+          Batal
+        </button>
+        <button onclick="saveEditKontak()" class="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">
+          <i class="fa-solid fa-save mr-1"></i> Simpan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Ganti Password -->
+  <div id="modalGantiPassword" class="fixed inset-0 z-[300] bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 max-w-md w-full shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-key text-purple-500"></i> Ganti Password
+        </h3>
+        <button onclick="closeModalGantiPassword()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3">
+        <!-- Password Lama -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Password Lama</label>
+          <div class="relative mt-1">
+            <input id="passLama" type="password" placeholder="Masukkan password lama" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 pr-11 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-purple-500">
+            <button type="button" onclick="toggleModalPassword('passLama', 'eyePassLama')" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-purple-500 active:scale-90 transition">
+              <i id="eyePassLama" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Password Baru -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Password Baru</label>
+          <div class="relative mt-1">
+            <input id="passBaru" type="password" placeholder="Masukkan password baru" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 pr-11 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-purple-500">
+            <button type="button" onclick="toggleModalPassword('passBaru', 'eyePassBaru')" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-purple-500 active:scale-90 transition">
+              <i id="eyePassBaru" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Konfirmasi Password -->
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase">Konfirmasi Password Baru</label>
+          <div class="relative mt-1">
+            <input id="passKonfirmasi" type="password" placeholder="Ulangi password baru" class="w-full h-11 bg-slate-50 dark:bg-slate-700 rounded-xl px-4 pr-11 text-sm border border-slate-200 dark:border-slate-600 outline-none focus:border-purple-500">
+            <button type="button" onclick="toggleModalPassword('passKonfirmasi', 'eyePassKonfirmasi')" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-purple-500 active:scale-90 transition">
+              <i id="eyePassKonfirmasi" class="fa-solid fa-eye text-sm"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-xl p-3">
+          <p class="text-[10px] text-purple-700 dark:text-purple-300">
+            <i class="fa-solid fa-circle-info"></i> Password minimal 6 karakter. Gunakan kombinasi huruf dan angka untuk keamanan.
+          </p>
+        </div>
+      </div>
+      
+      <div class="flex gap-2 mt-5">
+        <button onclick="closeModalGantiPassword()" class="flex-1 h-11 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold active:scale-95 transition">
+          Batal
+        </button>
+        <button onclick="saveGantiPassword()" class="flex-1 h-11 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-bold shadow-lg active:scale-95 transition">
+          <i class="fa-solid fa-lock mr-1"></i> Update Password
+        </button>
+      </div>
+    </div>
+  </div>
+    
   <script src="./app.js"></script>
 </body>
 </html>
