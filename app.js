@@ -72,9 +72,20 @@ function closeModalLokasiSalah() {
 }
 
 // ===== VALIDASI LOKASI KERJA =====
+// ===== VALIDASI LOKASI KERJA =====
 function validasiLokasiKerja(lokasiDipilih) {
-  // Jika user tidak punya lokasi_default (admin/HRD belum set), izinkan semua lokasi
+  // ===== BYPASS UNTUK ADMIN & HRD =====
+  const userRole = String(currentUser.role || '').trim().toLowerCase();
+  
+  if (userRole === 'admin' || userRole === 'hrd') {
+    console.log('👑 User adalah ' + userRole.toUpperCase() + ' → Bebas pilih lokasi manapun');
+    return true; // Skip validasi, izinkan semua lokasi
+  }
+  
+  // ===== USER BIASA (satpam, dll) =====
+  // Jika user tidak punya lokasi_default, izinkan semua lokasi
   if (!currentUser.lokasi_default || currentUser.lokasi_default === '' || currentUser.lokasi_default === '-') {
+    console.log('️ User tidak punya lokasi_default, izinkan semua lokasi');
     return true;
   }
   
@@ -83,6 +94,7 @@ function validasiLokasiKerja(lokasiDipilih) {
   const lokasiDipilihId = String(lokasiDipilih.id_lokasi).trim().toUpperCase();
   
   console.log('🔍 Validasi Lokasi:');
+  console.log('   Role User:', userRole);
   console.log('   Lokasi Default User:', lokasiDefault);
   console.log('   Lokasi yang Dipilih:', lokasiDipilihId);
   console.log('   Cocok:', lokasiDefault === lokasiDipilihId);
@@ -368,17 +380,77 @@ async function loadLokasi() {
     // Simpan daftar lokasi di variabel global untuk validasi
     window._daftarLokasi = result.data || [];
     
+    console.log('📍 Total lokasi aktif:', window._daftarLokasi.length);
+    console.log('👤 User:', currentUser.username, '| Role:', currentUser.role, '| Lokasi Default:', currentUser.lokasi_default);
+    
+    // ===== TAMPILKAN INFO ROLE DI ATAS DAFTAR LOKASI =====
+    const userRole = String(currentUser.role || '').trim().toLowerCase();
+    const isPrivileged = (userRole === 'admin' || userRole === 'hrd');
+    
+    if (isPrivileged) {
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'bg-gradient-to-r from-amber-400 to-amber-600 rounded-2xl p-4 shadow-lg mb-3 animate-fade-in';
+      infoDiv.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <i class="fa-solid fa-crown text-white text-lg"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Akses Penuh ${userRole.toUpperCase()}</p>
+            <p class="text-[10px] text-white/80">Anda dapat memilih lokasi kerja manapun</p>
+          </div>
+          <i class="fa-solid fa-check-circle text-white text-xl"></i>
+        </div>
+      `;
+      list.appendChild(infoDiv);
+    } else if (currentUser.lokasi_default && currentUser.lokasi_default !== '' && currentUser.lokasi_default !== '-') {
+      // Tampilkan info lokasi yang diizinkan untuk user biasa
+      const lokasiBenar = getNamaLokasiDefault();
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 shadow-lg mb-3 animate-fade-in';
+      infoDiv.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <i class="fa-solid fa-location-dot text-white text-lg"></i>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-white">Lokasi Kerja Anda</p>
+            <p class="text-[10px] text-white/80">${lokasiBenar}</p>
+          </div>
+          <i class="fa-solid fa-lock text-white/60 text-lg"></i>
+        </div>
+      `;
+      list.appendChild(infoDiv);
+    }
+    
+    // ===== RENDER DAFTAR LOKASI =====
     if (result.data && result.data.length > 0) {
       result.data.forEach(l => {
         const div = document.createElement('div');
-        div.className = 'bg-white dark:bg-slate-800 rounded-[20px] p-4 flex justify-between items-center shadow-sm';
-        div.innerHTML = '<div><p class="font-bold text-sm">' + l.nama_lokasi + '</p><p class="text-xs text-slate-500">' + l.alamat + '</p></div><button class="bg-slate-900 text-white px-4 h-9 rounded-xl text-xs font-bold active:scale-95 transition">PILIH</button>';
         
-        // ===== PERBAIKAN: Validasi lokasi saat user klik PILIH =====
+        // Tandai lokasi yang "direkomendasikan" untuk user biasa
+        const isRecommended = !isPrivileged && 
+          currentUser.lokasi_default && 
+          String(l.id_lokasi).trim().toUpperCase() === String(currentUser.lokasi_default).trim().toUpperCase();
+        
+        div.className = 'bg-white dark:bg-slate-800 rounded-[20px] p-4 flex justify-between items-center shadow-sm' + 
+          (isRecommended ? ' border-2 border-amber-400' : '');
+        
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            ${isRecommended ? '<div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center"><i class="fa-solid fa-star text-amber-600 text-sm"></i></div>' : ''}
+            <div>
+              <p class="font-bold text-sm">${l.nama_lokasi}</p>
+              <p class="text-xs text-slate-500">${l.alamat}</p>
+            </div>
+          </div>
+          <button class="bg-slate-900 text-white px-4 h-9 rounded-xl text-xs font-bold active:scale-95 transition">PILIH</button>
+        `;
+        
+        // Validasi lokasi saat user klik PILIH
         div.querySelector('button').onclick = () => {
           console.log('📍 User memilih lokasi:', l.nama_lokasi, '(', l.id_lokasi, ')');
           
-          // Validasi lokasi kerja
           if (validasiLokasiKerja(l)) {
             // Lokasi cocok → lanjut
             selectedLokasi = l;
@@ -388,7 +460,7 @@ async function loadLokasi() {
           } else {
             // Lokasi tidak cocok → tampilkan modal error
             const namaLokasiBenar = getNamaLokasiDefault();
-            console.log(' Lokasi tidak sesuai! Lokasi benar:', namaLokasiBenar);
+            console.log('❌ Lokasi tidak sesuai! Lokasi benar:', namaLokasiBenar);
             showModalLokasiSalah(namaLokasiBenar);
           }
         };
