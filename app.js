@@ -48,6 +48,64 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
+// ===== MODAL LOKASI SALAH =====
+function showModalLokasiSalah(lokasiBenar) {
+  const modal = document.getElementById('modalLokasiSalah');
+  const infoEl = document.getElementById('lokasiBenarInfo');
+  
+  if (infoEl) {
+    infoEl.innerText = lokasiBenar || 'Tidak diketahui';
+  }
+  
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeModalLokasiSalah() {
+  const modal = document.getElementById('modalLokasiSalah');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
+
+// ===== VALIDASI LOKASI KERJA =====
+function validasiLokasiKerja(lokasiDipilih) {
+  // Jika user tidak punya lokasi_default (admin/HRD belum set), izinkan semua lokasi
+  if (!currentUser.lokasi_default || currentUser.lokasi_default === '' || currentUser.lokasi_default === '-') {
+    return true;
+  }
+  
+  // Bandingkan ID lokasi yang dipilih dengan lokasi_default user
+  const lokasiDefault = String(currentUser.lokasi_default).trim().toUpperCase();
+  const lokasiDipilihId = String(lokasiDipilih.id_lokasi).trim().toUpperCase();
+  
+  console.log('🔍 Validasi Lokasi:');
+  console.log('   Lokasi Default User:', lokasiDefault);
+  console.log('   Lokasi yang Dipilih:', lokasiDipilihId);
+  console.log('   Cocok:', lokasiDefault === lokasiDipilihId);
+  
+  return lokasiDefault === lokasiDipilihId;
+}
+
+// ===== GET NAMA LOKASI DEFAULT =====
+function getNamaLokasiDefault() {
+  if (!currentUser.lokasi_default) return 'Tidak ditentukan';
+  
+  // Cari nama lokasi dari data yang sudah di-load
+  // Kita simpan daftar lokasi di variabel global saat loadLokasi()
+  if (window._daftarLokasi && Array.isArray(window._daftarLokasi)) {
+    const lokasi = window._daftarLokasi.find(l => 
+      String(l.id_lokasi).trim().toUpperCase() === String(currentUser.lokasi_default).trim().toUpperCase()
+    );
+    if (lokasi) return lokasi.nama_lokasi;
+  }
+  
+  return currentUser.lokasi_default;
+}
+
 // ===== LOADING =====
 function showLoading(show) {
   let overlay = document.getElementById('loadingOverlay');
@@ -306,16 +364,35 @@ async function loadLokasi() {
     sl.classList.add('flex');
     const list = document.getElementById('listLokasi');
     list.innerHTML = '';
+    
+    // Simpan daftar lokasi di variabel global untuk validasi
+    window._daftarLokasi = result.data || [];
+    
     if (result.data && result.data.length > 0) {
       result.data.forEach(l => {
         const div = document.createElement('div');
         div.className = 'bg-white dark:bg-slate-800 rounded-[20px] p-4 flex justify-between items-center shadow-sm';
         div.innerHTML = '<div><p class="font-bold text-sm">' + l.nama_lokasi + '</p><p class="text-xs text-slate-500">' + l.alamat + '</p></div><button class="bg-slate-900 text-white px-4 h-9 rounded-xl text-xs font-bold active:scale-95 transition">PILIH</button>';
+        
+        // ===== PERBAIKAN: Validasi lokasi saat user klik PILIH =====
         div.querySelector('button').onclick = () => {
-          selectedLokasi = l;
-          localStorage.setItem('sbu_lokasi', JSON.stringify(l));
-          showMainScreen();
+          console.log('📍 User memilih lokasi:', l.nama_lokasi, '(', l.id_lokasi, ')');
+          
+          // Validasi lokasi kerja
+          if (validasiLokasiKerja(l)) {
+            // Lokasi cocok → lanjut
+            selectedLokasi = l;
+            localStorage.setItem('sbu_lokasi', JSON.stringify(l));
+            showToast('✅ Lokasi: ' + l.nama_lokasi, 'success');
+            showMainScreen();
+          } else {
+            // Lokasi tidak cocok → tampilkan modal error
+            const namaLokasiBenar = getNamaLokasiDefault();
+            console.log(' Lokasi tidak sesuai! Lokasi benar:', namaLokasiBenar);
+            showModalLokasiSalah(namaLokasiBenar);
+          }
         };
+        
         list.appendChild(div);
       });
     } else {
