@@ -1193,6 +1193,280 @@ async function handleFotoProfilChange(event) {
   event.target.value = '';
 }
 
+// ===== MODAL EDIT PROFIL =====
+function openModalEditProfil() {
+  // Isi form dengan data saat ini
+  document.getElementById('editNama').value = currentUser.nama || '';
+  document.getElementById('editNik').value = currentUser.nik || '';
+  document.getElementById('editRole').value = currentUser.role || 'satpam';
+  
+  const modal = document.getElementById('modalEditProfil');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeModalEditProfil() {
+  const modal = document.getElementById('modalEditProfil');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function saveEditProfil() {
+  const namaBaru = document.getElementById('editNama').value.trim();
+  const nikBaru = document.getElementById('editNik').value.trim();
+  const roleBaru = document.getElementById('editRole').value;
+  
+  if (!namaBaru) {
+    showToast('Nama lengkap harus diisi!', 'warning');
+    return;
+  }
+  
+  if (!nikBaru) {
+    showToast('NIK harus diisi!', 'warning');
+    return;
+  }
+  
+  showLoading(true);
+  
+  try {
+    const payload = {
+      action: 'updateProfilUser',
+      username: currentUser.username,
+      nama_lengkap: namaBaru,
+      nik: nikBaru,
+      role: roleBaru
+    };
+    
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      // Update data user di localStorage dan variabel
+      currentUser.nama = namaBaru;
+      currentUser.nik = nikBaru;
+      currentUser.role = roleBaru;
+      currentUser.avatar = String(namaBaru).substring(0, 2).toUpperCase();
+      localStorage.setItem('sbu_user', JSON.stringify(currentUser));
+      
+      // Update tampilan
+      document.getElementById('profilNama').innerText = namaBaru;
+      document.getElementById('profilNamaHeader').innerText = namaBaru;
+      document.getElementById('profilNik').innerText = nikBaru;
+      document.getElementById('profilRole').innerText = roleBaru.toUpperCase();
+      document.getElementById('profilRoleHeader').innerText = roleBaru.toUpperCase();
+      document.getElementById('namaTop').innerText = namaBaru;
+      
+      // Update avatar text jika tidak ada foto
+      const avatarText = document.getElementById('avatarTopText');
+      const profilText = document.getElementById('profilFotoText');
+      if (avatarText && !document.getElementById('avatarTopImg').classList.contains('hidden') === false) {
+        avatarText.innerText = currentUser.avatar;
+      }
+      if (profilText && !document.getElementById('profilFotoImg').classList.contains('hidden') === false) {
+        profilText.innerText = currentUser.avatar;
+      }
+      
+      closeModalEditProfil();
+      showToast('✅ Info pribadi berhasil diupdate!', 'success');
+    } else {
+      showToast('❌ Gagal: ' + result.message, 'error');
+    }
+  } catch (e) {
+    console.error('Error update profil:', e);
+    showToast('❌ Koneksi gagal: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ===== MODAL EDIT KONTAK =====
+function openModalEditKontak() {
+  document.getElementById('editAlamat').value = currentUser.alamat || '';
+  document.getElementById('editTlp').value = currentUser.no_tlp || '';
+  document.getElementById('editEmail').value = currentUser.email || '';
+  
+  const modal = document.getElementById('modalEditKontak');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeModalEditKontak() {
+  const modal = document.getElementById('modalEditKontak');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+async function saveEditKontak() {
+  const alamatBaru = document.getElementById('editAlamat').value.trim();
+  const tlpBaru = document.getElementById('editTlp').value.trim();
+  const emailBaru = document.getElementById('editEmail').value.trim();
+  
+  if (!alamatBaru) {
+    showToast('Alamat harus diisi!', 'warning');
+    return;
+  }
+  
+  if (!tlpBaru) {
+    showToast('No. Telepon harus diisi!', 'warning');
+    return;
+  }
+  
+  // Validasi email sederhana
+  if (emailBaru && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailBaru)) {
+    showToast('Format email tidak valid!', 'warning');
+    return;
+  }
+  
+  showLoading(true);
+  
+  try {
+    const payload = {
+      action: 'updateProfilUser',
+      username: currentUser.username,
+      alamat: alamatBaru,
+      no_tlp: tlpBaru,
+      email: emailBaru
+    };
+    
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      // Update data user
+      currentUser.alamat = alamatBaru;
+      currentUser.no_tlp = tlpBaru;
+      currentUser.email = emailBaru;
+      localStorage.setItem('sbu_user', JSON.stringify(currentUser));
+      
+      // Update tampilan
+      document.getElementById('profilAlamat').innerText = alamatBaru;
+      document.getElementById('profilTlp').innerText = tlpBaru;
+      document.getElementById('profilEmail').innerText = emailBaru;
+      
+      closeModalEditKontak();
+      showToast('✅ Info kontak berhasil diupdate!', 'success');
+    } else {
+      showToast(' Gagal: ' + result.message, 'error');
+    }
+  } catch (e) {
+    console.error('Error update kontak:', e);
+    showToast('❌ Koneksi gagal: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ===== MODAL GANTI PASSWORD =====
+function openModalGantiPassword() {
+  document.getElementById('passLama').value = '';
+  document.getElementById('passBaru').value = '';
+  document.getElementById('passKonfirmasi').value = '';
+  
+  // Reset icon mata ke kondisi tertutup
+  document.getElementById('eyePassLama').className = 'fa-solid fa-eye text-sm';
+  document.getElementById('eyePassBaru').className = 'fa-solid fa-eye text-sm';
+  document.getElementById('eyePassKonfirmasi').className = 'fa-solid fa-eye text-sm';
+  
+  // Reset type ke password
+  document.getElementById('passLama').type = 'password';
+  document.getElementById('passBaru').type = 'password';
+  document.getElementById('passKonfirmasi').type = 'password';
+  
+  const modal = document.getElementById('modalGantiPassword');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+
+function closeModalGantiPassword() {
+  const modal = document.getElementById('modalGantiPassword');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+}
+
+// Toggle password visibility di modal
+function toggleModalPassword(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fa-solid fa-eye-slash text-sm';
+  } else {
+    input.type = 'password';
+    icon.className = 'fa-solid fa-eye text-sm';
+  }
+}
+
+async function saveGantiPassword() {
+  const passLama = document.getElementById('passLama').value;
+  const passBaru = document.getElementById('passBaru').value;
+  const passKonfirmasi = document.getElementById('passKonfirmasi').value;
+  
+  // Validasi
+  if (!passLama) {
+    showToast('Password lama harus diisi!', 'warning');
+    return;
+  }
+  
+  if (!passBaru) {
+    showToast('Password baru harus diisi!', 'warning');
+    return;
+  }
+  
+  if (passBaru.length < 6) {
+    showToast('Password baru minimal 6 karakter!', 'warning');
+    return;
+  }
+  
+  if (passBaru !== passKonfirmasi) {
+    showToast('Konfirmasi password tidak cocok!', 'warning');
+    return;
+  }
+  
+  if (passLama === passBaru) {
+    showToast('Password baru harus berbeda dengan password lama!', 'warning');
+    return;
+  }
+  
+  showLoading(true);
+  
+  try {
+    const payload = {
+      action: 'gantiPassword',
+      username: currentUser.username,
+      password_lama: passLama,
+      password_baru: passBaru
+    };
+    
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    
+    const result = await response.json();
+    
+    if (result.status === 'success') {
+      closeModalGantiPassword();
+      showToast('✅ Password berhasil diganti!', 'success');
+    } else {
+      showToast('❌ ' + result.message, 'error');
+    }
+  } catch (e) {
+    console.error('Error ganti password:', e);
+    showToast('❌ Koneksi gagal: ' + e.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
 // ===== RIWAYAT PENGAJUAN =====
 async function loadPengajuanUser() {
   if (!currentUser) return;
