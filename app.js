@@ -384,29 +384,36 @@ async function showMainScreen() {
   
   updateAbsenUI();
   
-  const savedStatus = JSON.parse(localStorage.getItem('sbu_absen_status') || 'null');
+  // ===== PERBAIKAN LOGIKA STATUS ABSEN =====
   const btnMasuk = document.getElementById('btnAbsenMasuk');
   const btnPulang = document.getElementById('btnAbsenPulang');
   const pesanEl = document.getElementById('absenPesan');
   
-  if (savedStatus && savedStatus.last_action === 'masuk') {
-    btnMasuk.disabled = true;
-    btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
-    btnMasuk.onclick = null;
-    btnPulang.disabled = false;
-    btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
-    btnPulang.onclick = () => openCamera('pulang');
-    if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold text-green-600'; }
-  } else if (savedStatus && savedStatus.last_action === 'pulang') {
-    btnMasuk.disabled = true;
-    btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
-    btnMasuk.onclick = null;
-    btnPulang.disabled = true;
-    btnPulang.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
-    btnPulang.onclick = null;
-    if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold text-red-600'; }
-  } else {
+  // SELALU cek dari server dulu (untuk sinkronisasi antar device)
+  // localStorage hanya sebagai fallback jika server error
+  try {
     await checkAbsenStatus();
+  } catch (e) {
+    console.error('Gagal cek status dari server, gunakan localStorage:', e);
+    // Fallback ke localStorage
+    const savedStatus = JSON.parse(localStorage.getItem('sbu_absen_status') || 'null');
+    if (savedStatus && savedStatus.last_action === 'masuk') {
+      btnMasuk.disabled = true;
+      btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+      btnMasuk.onclick = null;
+      btnPulang.disabled = false;
+      btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
+      btnPulang.onclick = () => openCamera('pulang');
+      if (pesanEl) { pesanEl.innerText = 'Anda sudah absen masuk. Silakan absen pulang.'; pesanEl.className = 'text-sm font-bold text-green-600'; }
+    } else if (savedStatus && savedStatus.last_action === 'pulang') {
+      btnMasuk.disabled = true;
+      btnMasuk.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+      btnMasuk.onclick = null;
+      btnPulang.disabled = true;
+      btnPulang.className = 'h-20 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl font-bold flex flex-col items-center justify-center gap-1 cursor-not-allowed';
+      btnPulang.onclick = null;
+      if (pesanEl) { pesanEl.innerText = 'Anda sudah absen pulang. Cooldown 5 jam.'; pesanEl.className = 'text-sm font-bold text-red-600'; }
+    }
   }
   
   // Init fitur baru
@@ -429,11 +436,17 @@ async function checkAbsenStatus() {
   const pesanEl = document.getElementById('absenPesan');
   
   try {
-    const url = CONFIG.GAS_URL + '?action=getAbsenStatus&username=' + encodeURIComponent(currentUser.username) + '&t=' + Date.now();
+    // Tambah cache buster yang lebih kuat
+    const url = CONFIG.GAS_URL + '?action=getAbsenStatus&username=' + 
+                encodeURIComponent(currentUser.username.trim().toLowerCase()) + 
+                '&t=' + Date.now() + '&rand=' + Math.random();
     const res = await fetch(url);
     const result = await res.json();
     
+    console.log('📡 Server Response:', result);
+    
     if (result.status === 'success') {
+      // Update tombol MASUK
       if (result.tombol_masuk === true) {
         btnMasuk.disabled = false;
         btnMasuk.className = 'h-20 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1';
@@ -444,6 +457,7 @@ async function checkAbsenStatus() {
         btnMasuk.onclick = null;
       }
       
+      // Update tombol PULANG
       if (result.tombol_pulang === true) {
         btnPulang.disabled = false;
         btnPulang.className = 'h-20 bg-green-500 text-white rounded-2xl font-bold shadow-lg active:scale-95 transition flex flex-col items-center justify-center gap-1 btn-pulse-active';
@@ -454,6 +468,7 @@ async function checkAbsenStatus() {
         btnPulang.onclick = null;
       }
       
+      // Update pesan
       if (pesanEl) {
         pesanEl.innerText = result.pesan || '';
         if (result.pesan.includes('sudah absen masuk')) pesanEl.className = 'text-sm font-bold text-green-600';
@@ -461,16 +476,26 @@ async function checkAbsenStatus() {
         else pesanEl.className = 'text-sm font-bold text-amber-600';
       }
       
+      // Update localStorage dengan data dari server
       if (result.debug_last_masuk && !result.debug_last_pulang) {
-        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'masuk', timestamp: new Date(result.debug_last_masuk).toISOString() }));
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ 
+          last_action: 'masuk', 
+          timestamp: new Date(result.debug_last_masuk).toISOString() 
+        }));
       } else if (result.debug_last_pulang) {
-        localStorage.setItem('sbu_absen_status', JSON.stringify({ last_action: 'pulang', timestamp: new Date(result.debug_last_pulang).toISOString() }));
+        localStorage.setItem('sbu_absen_status', JSON.stringify({ 
+          last_action: 'pulang', 
+          timestamp: new Date(result.debug_last_pulang).toISOString() 
+        }));
       } else {
         localStorage.removeItem('sbu_absen_status');
       }
+    } else {
+      console.error('❌ Server error:', result.message);
     }
   } catch (e) {
-    console.error('Check status error:', e);
+    console.error('❌ Check status error:', e);
+    throw e; // Re-throw agar bisa di-catch di showMainScreen
   }
 }
 
@@ -1547,7 +1572,11 @@ function kembaliKePilihLokasi() {
 
 function doLogout() {
   if (confirm('Yakin ingin keluar?')) {
-    localStorage.clear();
+    // HAPUS: localStorage.clear(); // Ini menghapus status absen!
+    // GANTI dengan: hapus hanya data user & lokasi, TAPI pertahankan status absen
+    localStorage.removeItem('sbu_user');
+    localStorage.removeItem('sbu_lokasi');
+    // JANGAN hapus sbu_absen_status - biarkan persisten untuk sinkronisasi
     location.reload();
   }
 }
