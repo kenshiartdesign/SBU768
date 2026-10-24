@@ -1,6 +1,6 @@
 {
   "name": "PT SBU Absensi",
-  "short_name": "SBU Absensi",
+  "short_name": "absEnQ SBU",
   "description": "Aplikasi Absensi & Manajemen PT Sentra Bhakti Utama",
   "start_url": "/SBU768/",
   "scope": "/SBU768/",
