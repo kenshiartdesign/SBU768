@@ -1060,30 +1060,37 @@ async function submitPatroliFinal() {
   const catatan = document.getElementById('patroliCatatan').value.trim();
   
   if (!lokasi || !catatan) {
-    showToast('Lokasi dan keterangan wajib diisi!', 'warning');
+    showToast('️ Lokasi dan keterangan wajib diisi!', 'warning');
     return;
   }
   
   if (!fotoPatroli1 && !fotoPatroli2) {
-    showToast('Minimal 1 foto wajib diupload!', 'warning');
+    showToast('⚠️ Minimal 1 foto wajib diupload!', 'warning');
     return;
   }
   
-  showToast('📸 Memproses watermark...', 'info');
+  // ===== NOTIFIKASI PROGRESS =====
+  showToast('📸 Memulai proses watermark...', 'info');
   
   try {
-    // Proses watermark di kedua foto (jika ada)
+    // Proses Foto 1
     let foto1Base64 = fotoPatroli1;
-    let foto2Base64 = fotoPatroli2;
-    
     if (foto1Base64) {
-      foto1Base64 = await addTimestampWatermark(foto1Base64, '📍 PATROLI');
-    }
-    if (foto2Base64) {
-      foto2Base64 = await addTimestampWatermark(foto2Base64, '📍 PATROLI');
+      showToast('🎨 Memproses watermark Foto 1...', 'info');
+      foto1Base64 = await addTimestampWatermark(foto1Base64, ' PATROLI');
+      showToast('✅ Foto 1 berhasil diproses!', 'success');
     }
     
-    showToast('📤 Mengirim laporan...', 'info');
+    // Proses Foto 2
+    let foto2Base64 = fotoPatroli2;
+    if (foto2Base64) {
+      showToast('🎨 Memproses watermark Foto 2...', 'info');
+      foto2Base64 = await addTimestampWatermark(foto2Base64, '📍 PATROLI');
+      showToast('✅ Foto 2 berhasil diproses!', 'success');
+    }
+    
+    // Kirim ke server
+    showToast('📤 Mengirim laporan patroli ke server...', 'info');
     
     const res = await fetchGAS('patroli', {
       action: 'patroli',
@@ -1101,20 +1108,24 @@ async function submitPatroliFinal() {
     });
     
     if (res.status === 'success') {
-      showToast('✅ Laporan patroli berhasil!', 'success');
+      // ===== NOTIFIKASI SUKSES DETAIL =====
+      const jumlahFoto = (foto1Base64 ? 1 : 0) + (foto2Base64 ? 1 : 0);
+      showToast(`✅ Laporan patroli berhasil dikirim! (${jumlahFoto} foto terkirim)`, 'success');
+      
+      // Reset form
       backToAbsenMenu();
       document.getElementById('patroliLokasi').value = '';
       document.getElementById('patroliCatatan').value = '';
       fotoPatroli1 = null;
       fotoPatroli2 = null;
       document.getElementById('btnPatroli1').innerHTML = '📷 Foto 1';
-      document.getElementById('btnPatroli2').innerHTML = '📷 Foto 2';
+      document.getElementById('btnPatroli2').innerHTML = ' Foto 2';
     } else {
-      showToast('Gagal: ' + res.message, 'error');
+      showToast('❌ Gagal: ' + res.message, 'error');
     }
   } catch (e) {
     console.error('Error submit patroli:', e);
-    showToast('Terjadi kesalahan: ' + e.message, 'error');
+    showToast('❌ Terjadi kesalahan: ' + e.message, 'error');
   }
 }
 
@@ -1125,29 +1136,37 @@ async function submitKejadianFinal() {
   const kronologi = document.getElementById('kejadianKronologi').value.trim();
   
   if (!jenis || !lokasi || !kronologi) {
-    showToast('Jenis, lokasi, dan kronologi wajib diisi!', 'warning');
+    showToast('⚠️ Jenis, lokasi, dan kronologi wajib diisi!', 'warning');
     return;
   }
   
   if (!fotoKejadian1 && !fotoKejadian2) {
-    showToast('Minimal 1 foto bukti wajib diupload!', 'warning');
+    showToast('️ Minimal 1 foto bukti wajib diupload!', 'warning');
     return;
   }
   
-  showToast('📸 Memproses watermark...', 'info');
+  // ===== NOTIFIKASI PROGRESS =====
+  showToast('📸 Memulai proses watermark...', 'info');
   
   try {
+    // Proses Foto 1
     let foto1Base64 = fotoKejadian1;
-    let foto2Base64 = fotoKejadian2;
-    
     if (foto1Base64) {
+      showToast(' Memproses watermark Foto 1...', 'info');
       foto1Base64 = await addTimestampWatermark(foto1Base64, '⚠️ KEJADIAN: ' + jenis);
-    }
-    if (foto2Base64) {
-      foto2Base64 = await addTimestampWatermark(foto2Base64, '⚠️ KEJADIAN: ' + jenis);
+      showToast('✅ Foto 1 berhasil diproses!', 'success');
     }
     
-    showToast('📤 Mengirim laporan...', 'info');
+    // Proses Foto 2
+    let foto2Base64 = fotoKejadian2;
+    if (foto2Base64) {
+      showToast('🎨 Memproses watermark Foto 2...', 'info');
+      foto2Base64 = await addTimestampWatermark(foto2Base64, '⚠️ KEJADIAN: ' + jenis);
+      showToast('✅ Foto 2 berhasil diproses!', 'success');
+    }
+    
+    // Kirim ke server
+    showToast(' Mengirim laporan kejadian ke server...', 'info');
     
     const res = await fetchGAS('kejadian', {
       action: 'kejadian',
@@ -1164,7 +1183,11 @@ async function submitKejadianFinal() {
     });
     
     if (res.status === 'success') {
-      showToast('✅ Laporan kejadian berhasil!', 'success');
+      // ===== NOTIFIKASI SUKSES DETAIL =====
+      const jumlahFoto = (foto1Base64 ? 1 : 0) + (foto2Base64 ? 1 : 0);
+      showToast(`✅ Laporan kejadian berhasil dikirim! (${jumlahFoto} foto terkirim)`, 'success');
+      
+      // Reset form
       backToAbsenMenu();
       document.getElementById('kejadianJenis').value = '';
       document.getElementById('kejadianLokasi').value = '';
@@ -1174,11 +1197,11 @@ async function submitKejadianFinal() {
       document.getElementById('btnKejadian1').innerHTML = '📷 Bukti 1';
       document.getElementById('btnKejadian2').innerHTML = '📷 Bukti 2';
     } else {
-      showToast('Gagal: ' + res.message, 'error');
+      showToast('❌ Gagal: ' + res.message, 'error');
     }
   } catch (e) {
     console.error('Error submit kejadian:', e);
-    showToast('Terjadi kesalahan: ' + e.message, 'error');
+    showToast('❌ Terjadi kesalahan: ' + e.message, 'error');
   }
 }
 
@@ -1190,21 +1213,23 @@ async function submitIjinFinal() {
   const keterangan = document.getElementById('ijinKet').value.trim();
   
   if (!jenis || !mulai || !selesai || !keterangan) {
-    showToast('Semua field wajib diisi!', 'warning');
+    showToast('⚠️ Semua field wajib diisi!', 'warning');
     return;
   }
   
   if (!fotoIjin) {
-    showToast('Foto bukti wajib diupload!', 'warning');
+    showToast('⚠️ Foto bukti wajib diupload!', 'warning');
     return;
   }
   
-  showToast('📸 Memproses watermark...', 'info');
+  // ===== NOTIFIKASI PROGRESS =====
+  showToast('📸 Memproses watermark foto...', 'info');
   
   try {
     let fotoBase64 = await addTimestampWatermark(fotoIjin, '📄 ' + jenis);
+    showToast('✅ Foto berhasil diproses!', 'success');
     
-    showToast('📤 Mengajukan ' + jenis.toLowerCase() + '...', 'info');
+    showToast(' Mengajukan ' + jenis.toLowerCase() + '...', 'info');
     
     const res = await fetchGAS('ijinSakit', {
       action: 'ijinSakit',
@@ -1219,7 +1244,9 @@ async function submitIjinFinal() {
     });
     
     if (res.status === 'success') {
-      showToast('✅ Pengajuan ' + jenis.toLowerCase() + ' berhasil!', 'success');
+      showToast(`✅ Pengajuan ${jenis.toLowerCase()} berhasil dikirim!`, 'success');
+      
+      // Reset form
       backToInfoMenu();
       document.getElementById('ijinJenis').value = 'SAKIT';
       document.getElementById('ijinMulai').value = '';
@@ -1228,11 +1255,11 @@ async function submitIjinFinal() {
       fotoIjin = null;
       document.getElementById('btnIjin').innerHTML = '📷 Upload Bukti';
     } else {
-      showToast('Gagal: ' + res.message, 'error');
+      showToast(' Gagal: ' + res.message, 'error');
     }
   } catch (e) {
     console.error('Error submit ijin:', e);
-    showToast('Terjadi kesalahan: ' + e.message, 'error');
+    showToast('❌ Terjadi kesalahan: ' + e.message, 'error');
   }
 }
 
