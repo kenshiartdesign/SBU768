@@ -2132,29 +2132,38 @@ function setTab(t, btnElement) {
   }
 }
 
+// ✅ PASTE KODE BARU INI:
 function kembaliKePilihLokasi() {
-  if (confirm('Yakin ingin mengganti lokasi kerja?\n\nAnda akan kembali ke halaman pilih lokasi.')) {
-    localStorage.removeItem('sbu_lokasi');
-    localStorage.removeItem('sbu_absen_status');
-    selectedLokasi = null;
-    document.getElementById('screen-main').classList.add('hidden');
-    document.getElementById('screen-main').classList.remove('flex');
-    const sl = document.getElementById('screen-lokasi');
-    sl.classList.remove('hidden');
-    sl.classList.add('flex');
-    loadLokasi();
-  }
+  showCustomConfirm(
+    'Ganti Lokasi Kerja',
+    'Yakin ingin mengganti lokasi kerja?',
+    'Anda akan kembali ke halaman pilih lokasi.',
+    function() {
+      localStorage.removeItem('sbu_lokasi');
+      localStorage.removeItem('sbu_absen_status');
+      selectedLokasi = null;
+      document.getElementById('screen-main').classList.add('hidden');
+      document.getElementById('screen-main').classList.remove('flex');
+      const sl = document.getElementById('screen-lokasi');
+      sl.classList.remove('hidden');
+      sl.classList.add('flex');
+      loadLokasi();
+    }
+  );
 }
 
+// ✅ PASTE KODE BARU INI:
 function doLogout() {
-  if (confirm('Yakin ingin keluar?')) {
-    // HAPUS: localStorage.clear(); // Ini menghapus status absen!
-    // GANTI dengan: hapus hanya data user & lokasi, TAPI pertahankan status absen
-    localStorage.removeItem('sbu_user');
-    localStorage.removeItem('sbu_lokasi');
-    // JANGAN hapus sbu_absen_status - biarkan persisten untuk sinkronisasi
-    location.reload();
-  }
+  showCustomConfirm(
+    'Keluar Aplikasi',
+    'Yakin ingin keluar dari aplikasi?',
+    'Anda harus login kembali untuk mengakses fitur.',
+    function() {
+      localStorage.removeItem('sbu_user');
+      localStorage.removeItem('sbu_lokasi');
+      location.reload();
+    }
+  );
 }
 
 // ===== CUSTOM CONFIRMATION MODAL FUNCTIONS =====
