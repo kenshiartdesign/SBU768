@@ -2256,7 +2256,7 @@ function showCustomConfirm(title, message, subtext, callback) {
   
   customConfirmCallback = callback;
   
-  // 🛡️ FALLBACK AMAN: Jika modal HTML tidak ditemukan, gunakan confirm bawaan browser agar tetap berfungsi
+  // ️ FALLBACK AMAN
   if (!modal) {
     console.warn('⚠️ Modal custom tidak ditemukan, menggunakan fallback browser confirm');
     if (confirm(title + '\n\n' + message + (subtext ? '\n\n' + subtext : ''))) {
@@ -2270,44 +2270,38 @@ function showCustomConfirm(title, message, subtext, callback) {
   console.log('✅ Modal ditampilkan');
   
   if (okBtn) {
-    // Clone node untuk menghapus event listener lama yang mungkin menumpuk/buggy
+    // Clone node untuk menghapus event listener lama
     const newOkBtn = okBtn.cloneNode(true);
     okBtn.parentNode.replaceChild(newOkBtn, okBtn);
     
     newOkBtn.onclick = function(e) {
       e.preventDefault();
       console.log('✅ Tombol OK diklik');
+      
+      // Simpan callback ke variabel lokal SEBELUM closeCustomConfirm dipanggil
+      const callbackToRun = customConfirmCallback;
+      
+      // Tutup modal
       closeCustomConfirm();
-      if (customConfirmCallback) {
+      
+      // Jalankan callback yang sudah disimpan
+      if (callbackToRun) {
         try {
-          customConfirmCallback();
+          console.log('🚀 Menjalankan callback...');
+          callbackToRun();
           console.log('✅ Callback berhasil dieksekusi');
         } catch (err) {
           console.error('❌ Error di dalam callback:', err);
           showToast('Terjadi kesalahan: ' + err.message, 'error');
         }
+      } else {
+        console.error('❌ Callback tidak ada!');
       }
     };
   } else {
     console.error('❌ Tombol OK tidak ditemukan di HTML!');
   }
 }
-
-function closeCustomConfirm() {
-  const modal = document.getElementById('customConfirmModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    document.body.style.overflow = '';
-  }
-  customConfirmCallback = null;
-}
-
-// Tutup modal dengan tombol ESC
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeCustomConfirm();
-  }
-});
 
 // ===== FUNGSI YANG MENGGUNAKAN MODAL =====
 
