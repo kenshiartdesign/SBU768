@@ -166,6 +166,25 @@
       text-rendering: auto;
       -webkit-font-smoothing: antialiased;
     }
+    /* ===== HIDE SPINNER/LOADING DI HEADER ===== */
+.ptr-indicator,
+#ptrIndicator,
+.ptr-spinner,
+.loading-spinner,
+.header-spinner {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide semua animasi loading di header */
+header [class*="spinner"],
+header [class*="loading"],
+header .animate-spin,
+header .fa-spinner {
+  display: none !important;
+}
   </style>
 </head>
 <body class="bg-[#0f172a] text-white">
