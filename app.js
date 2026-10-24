@@ -2157,6 +2157,64 @@ function doLogout() {
   }
 }
 
+// ===== CUSTOM CONFIRMATION MODAL FUNCTIONS =====
+let customConfirmCallback = null;
+
+function showCustomConfirm(title, message, subtext, callback) {
+  const modal = document.getElementById('customConfirmModal');
+  const titleEl = document.getElementById('customConfirmTitle');
+  const messageEl = document.getElementById('customConfirmMessage');
+  const subtextEl = document.getElementById('customConfirmSubtext');
+  const okBtn = document.getElementById('customConfirmOkBtn');
+  
+  // Set content
+  if (titleEl) titleEl.textContent = title || 'Konfirmasi';
+  if (messageEl) messageEl.textContent = message || 'Apakah Anda yakin?';
+  if (subtextEl) {
+    if (subtext) {
+      subtextEl.textContent = subtext;
+      subtextEl.style.display = 'block';
+    } else {
+      subtextEl.style.display = 'none';
+    }
+  }
+  
+  // Store callback
+  customConfirmCallback = callback;
+  
+  // Show modal
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+  }
+  
+  // Setup OK button
+  if (okBtn) {
+    okBtn.onclick = function() {
+      closeCustomConfirm();
+      if (customConfirmCallback) {
+        customConfirmCallback();
+      }
+    };
+  }
+}
+
+function closeCustomConfirm() {
+  const modal = document.getElementById('customConfirmModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scrolling
+  }
+  customConfirmCallback = null;
+}
+
+// Close modal dengan tombol ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeCustomConfirm();
+  }
+});
+
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   startGPS();
