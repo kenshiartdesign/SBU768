@@ -2232,17 +2232,17 @@ function doLogout() {
   );
 }
 
-// ===== CUSTOM CONFIRMATION MODAL FUNCTIONS =====
+// ===== CUSTOM CONFIRMATION MODAL FUNCTIONS (BULLETPROOF) =====
 let customConfirmCallback = null;
 
 function showCustomConfirm(title, message, subtext, callback) {
+  console.log('🔍 showCustomConfirm dipanggil:', title);
   const modal = document.getElementById('customConfirmModal');
   const titleEl = document.getElementById('customConfirmTitle');
   const messageEl = document.getElementById('customConfirmMessage');
   const subtextEl = document.getElementById('customConfirmSubtext');
-  const okBtn = document.getElementById('customConfirmOkBtn');
+  let okBtn = document.getElementById('customConfirmOkBtn');
   
-  // Set content
   if (titleEl) titleEl.textContent = title || 'Konfirmasi';
   if (messageEl) messageEl.textContent = message || 'Apakah Anda yakin?';
   if (subtextEl) {
@@ -2254,23 +2254,42 @@ function showCustomConfirm(title, message, subtext, callback) {
     }
   }
   
-  // Store callback
   customConfirmCallback = callback;
   
-  // Show modal
-  if (modal) {
-    modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
+  // 🛡️ FALLBACK AMAN: Jika modal HTML tidak ditemukan, gunakan confirm bawaan browser agar tetap berfungsi
+  if (!modal) {
+    console.warn('⚠️ Modal custom tidak ditemukan, menggunakan fallback browser confirm');
+    if (confirm(title + '\n\n' + message + (subtext ? '\n\n' + subtext : ''))) {
+      if (callback) callback();
+    }
+    return;
   }
   
-  // Setup OK button
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  console.log('✅ Modal ditampilkan');
+  
   if (okBtn) {
-    okBtn.onclick = function() {
+    // Clone node untuk menghapus event listener lama yang mungkin menumpuk/buggy
+    const newOkBtn = okBtn.cloneNode(true);
+    okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+    
+    newOkBtn.onclick = function(e) {
+      e.preventDefault();
+      console.log('✅ Tombol OK diklik');
       closeCustomConfirm();
       if (customConfirmCallback) {
-        customConfirmCallback();
+        try {
+          customConfirmCallback();
+          console.log('✅ Callback berhasil dieksekusi');
+        } catch (err) {
+          console.error('❌ Error di dalam callback:', err);
+          showToast('Terjadi kesalahan: ' + err.message, 'error');
+        }
       }
     };
+  } else {
+    console.error('❌ Tombol OK tidak ditemukan di HTML!');
   }
 }
 
@@ -2278,30 +2297,133 @@ function closeCustomConfirm() {
   const modal = document.getElementById('customConfirmModal');
   if (modal) {
     modal.classList.add('hidden');
-    document.body.style.overflow = ''; // Restore scrolling
+    document.body.style.overflow = '';
   }
   customConfirmCallback = null;
 }
 
-// Close modal dengan tombol ESC
+// Tutup modal dengan tombol ESC
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeCustomConfirm();
   }
 });
 
-// ===== DEBUG: Pastikan showCustomConfirm bekerja =====
-window.testCustomConfirm = function() {
+// ===== FUNGSI YANG MENGGUNAKAN MODAL =====
+
+function kembaliKePilihLokasi() {
   showCustomConfirm(
-    'Test Modal',
-    'Ini adalah test modal',
-    'Jika Anda melihat ini, modal berfungsi!',
+    'Ganti Lokasi Kerja',
+    'Yakin ingin mengganti lokasi kerja?',
+    'Anda akan kembali ke halaman pilih lokasi.',
     function() {
-      console.log('✅ Callback dieksekusi!');
-      alert('Callback berhasil!');
+      console.log('✅ User konfirmasi ganti lokasi');
+      
+      // Hapus data lokasi & status absen
+      localStorage.removeItem('sbu_lokasi');
+      localStorage.removeItem('sbu_absen_status');
+      
+      // Reset variabel global
+      selectedLokasi = null;
+      
+      // Sembunyikan screen utama
+      const screenMain = document.getElementById('screen-main');
+      if (screenMain) {
+        screenMain.classList.add('hidden');
+        screenMain.classList.remove('flex');
+      }
+      
+      // Tampilkan screen pilih lokasi
+      const screenLokasi = document.getElementById('screen-lokasi');
+      if (screenLokasi) {
+        screenLokasi.classList.remove('hidden');
+        screenLokasi.classList.add('flex');
+      }
+      
+      // Reset daftar lokasi
+      const listLokasi = document.getElementById('listLokasi');
+      if (listLokasi) {
+        listLokasi.innerHTML = '<p class="text-center text-slate-500 text-sm w-full">Memuat lokasi...</p>';
+      }
+      
+      // Load ulang daftar lokasi
+      loadLokasi();
+      showToast('Silakan pilih lokasi kerja baru', 'info');
     }
   );
-};
+}
+
+function doLogout() {
+  showCustomConfirm(
+    'Keluar Aplikasi',
+    'Yakin ingin keluar dari aplikasi?',
+    'Anda harus login kembali untuk mengakses fitur.',
+    function() {
+      console.log('✅ User konfirmasi logout');
+      
+      // Hapus data user & lokasi
+      localStorage.removeItem('sbu_user');
+      localStorage.removeItem('sbu_lokasi');
+      localStorage.removeItem('sbu_absen_status');
+      
+      // Reset variabel global
+      currentUser = null;
+      selectedLokasi = null;
+      
+      // Sembunyikan semua screen
+      const screenMain = document.getElementById('screen-main');
+      const screenLokasi = document.getElementById('screen-lokasi');
+      
+      if (screenMain) {
+        screenMain.classList.add('hidden');
+        screenMain.classList.remove('flex');
+      }
+      if (screenLokasi) {
+        screenLokasi.classList.add('hidden');
+        screenLokasi.classList.remove('flex');
+      }
+      
+      // Tampilkan screen login
+      const screenLogin = document.getElementById('screen-login');
+      if (screenLogin) {
+        screenLogin.classList.remove('hidden');
+        screenLogin.classList.add('flex');
+      }
+      
+      // Reset form login
+      const inpUser = document.getElementById('inpUser');
+      const inpPass = document.getElementById('inpPass');
+      const loginError = document.getElementById('loginError');
+      
+      if (inpUser) inpUser.value = '';
+      if (inpPass) inpPass.value = '';
+      if (loginError) {
+        loginError.textContent = '';
+        loginError.classList.add('hidden');
+      }
+      
+      showToast('Berhasil keluar dari aplikasi', 'success');
+      
+      // Paksa reload halaman setelah 500ms (untuk memastikan PWA reset total)
+      setTimeout(() => {
+        window.location.href = window.location.href;
+      }, 500);
+    }
+  );
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  startGPS();
+  startClock();
+  if (currentUser && selectedLokasi) {
+    document.getElementById('screen-login').classList.add('hidden');
+    showMainScreen();
+  } else if (currentUser) {
+    document.getElementById('screen-login').classList.add('hidden');
+    loadLokasi();
+  }
+});
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
