@@ -2132,36 +2132,102 @@ function setTab(t, btnElement) {
   }
 }
 
-// ✅ PASTE KODE BARU INI:
 function kembaliKePilihLokasi() {
   showCustomConfirm(
     'Ganti Lokasi Kerja',
     'Yakin ingin mengganti lokasi kerja?',
     'Anda akan kembali ke halaman pilih lokasi.',
     function() {
+      console.log('✅ User konfirmasi ganti lokasi');
+      
+      // Hapus data lokasi & status absen
       localStorage.removeItem('sbu_lokasi');
       localStorage.removeItem('sbu_absen_status');
+      
+      // Reset variabel global
       selectedLokasi = null;
-      document.getElementById('screen-main').classList.add('hidden');
-      document.getElementById('screen-main').classList.remove('flex');
-      const sl = document.getElementById('screen-lokasi');
-      sl.classList.remove('hidden');
-      sl.classList.add('flex');
+      
+      // Sembunyikan screen utama
+      const screenMain = document.getElementById('screen-main');
+      if (screenMain) {
+        screenMain.classList.add('hidden');
+        screenMain.classList.remove('flex');
+      }
+      
+      // Tampilkan screen pilih lokasi
+      const screenLokasi = document.getElementById('screen-lokasi');
+      if (screenLokasi) {
+        screenLokasi.classList.remove('hidden');
+        screenLokasi.classList.add('flex');
+      }
+      
+      // Reset daftar lokasi
+      const listLokasi = document.getElementById('listLokasi');
+      if (listLokasi) {
+        listLokasi.innerHTML = '<p class="text-center text-slate-500 text-sm w-full">Memuat lokasi...</p>';
+      }
+      
+      // Load ulang daftar lokasi
       loadLokasi();
+      
+      showToast('Silakan pilih lokasi kerja baru', 'info');
     }
   );
 }
 
-// ✅ PASTE KODE BARU INI:
 function doLogout() {
   showCustomConfirm(
     'Keluar Aplikasi',
     'Yakin ingin keluar dari aplikasi?',
     'Anda harus login kembali untuk mengakses fitur.',
     function() {
+      // Hapus data user & lokasi
       localStorage.removeItem('sbu_user');
       localStorage.removeItem('sbu_lokasi');
-      location.reload();
+      localStorage.removeItem('sbu_absen_status');
+      
+      // Reset variabel global
+      currentUser = null;
+      selectedLokasi = null;
+      
+      // Sembunyikan semua screen
+      const screenMain = document.getElementById('screen-main');
+      const screenLokasi = document.getElementById('screen-lokasi');
+      
+      if (screenMain) {
+        screenMain.classList.add('hidden');
+        screenMain.classList.remove('flex');
+      }
+      if (screenLokasi) {
+        screenLokasi.classList.add('hidden');
+        screenLokasi.classList.remove('flex');
+      }
+      
+      // Tampilkan screen login
+      const screenLogin = document.getElementById('screen-login');
+      if (screenLogin) {
+        screenLogin.classList.remove('hidden');
+        screenLogin.classList.add('flex');
+      }
+      
+      // Reset form login
+      const inpUser = document.getElementById('inpUser');
+      const inpPass = document.getElementById('inpPass');
+      const loginError = document.getElementById('loginError');
+      
+      if (inpUser) inpUser.value = '';
+      if (inpPass) inpPass.value = '';
+      if (loginError) {
+        loginError.textContent = '';
+        loginError.classList.add('hidden');
+      }
+      
+      // Paksa reload halaman setelah 500ms (untuk PWA)
+      setTimeout(() => {
+        window.location.href = window.location.href;
+      }, 500);
+      
+      showToast('Berhasil keluar dari aplikasi', 'success');
     }
   );
 }
@@ -2223,6 +2289,19 @@ document.addEventListener('keydown', function(e) {
     closeCustomConfirm();
   }
 });
+
+// ===== DEBUG: Pastikan showCustomConfirm bekerja =====
+window.testCustomConfirm = function() {
+  showCustomConfirm(
+    'Test Modal',
+    'Ini adalah test modal',
+    'Jika Anda melihat ini, modal berfungsi!',
+    function() {
+      console.log('✅ Callback dieksekusi!');
+      alert('Callback berhasil!');
+    }
+  );
+};
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
