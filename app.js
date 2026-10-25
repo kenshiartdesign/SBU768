@@ -2385,6 +2385,31 @@ function doLogout() {
   );
 }
 
+// ===== AUTO UPDATE CHECKER (SETUP SEKALI, BERLAKU SELAMANYA) =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.ready.then(registration => {
+    registration.addEventListener('updatefound', () => {
+      const newWorker = registration.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('🔄 Update tersedia! Memuat ulang...');
+          showToast('🔄 Aplikasi diperbarui ke versi terbaru...', 'info');
+          
+          // Auto reload setelah 1.5 detik
+          setTimeout(() => {
+            window.location.reload(true);
+          }, 1500);
+        }
+      });
+    });
+  });
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  // ... (kode init yang sudah ada) ...
+});
+
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   startGPS();
