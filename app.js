@@ -2498,24 +2498,77 @@ function doLogout() {
   );
 }
 
-// ===== AUTO UPDATE CHECKER (SETUP SEKALI, BERLAKU SELAMANYA) =====
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.ready.then(registration => {
-    registration.addEventListener('updatefound', () => {
-      const newWorker = registration.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          console.log('🔄 Update tersedia! Memuat ulang...');
-          showToast('🔄 Aplikasi diperbarui ke versi terbaru...', 'info');
-          
-          // Auto reload setelah 1.5 detik
-          setTimeout(() => {
-            window.location.reload(true);
-          }, 1500);
-        }
-      });
+// ============================================
+// TRUE AUTO-UPDATE SBU768 (Cek Otomatis Setiap 5 Menit)
+// ============================================
+async function cekUpdateOtomatisSBU() {
+  try {
+    // 1. Minta info file app.js terbaru dari server (tanpa download full, cuma cek tanggal)
+    const res = await fetch('./app.js?t=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
+    const tanggalServer = res.headers.get('Last-Modified');
+    
+    // Gunakan kunci unik agar tidak bentrok dengan aplikasi lain
+    const tanggalDisimpan = localStorage.getItem('tanggalAppTerakhir_sbu768');
+
+    // 2. Jika tanggal di server BEDA dengan yang ada di HP user, berarti ada update!
+    if (tanggalDisimpan && tanggalServer !== tanggalDisimpan) {
+      console.log('🚀 Update terdeteksi di SBU768!');
+      tampilkanNotifUpdateSBU();
+    }
+
+    // 3. Simpan tanggal terbaru ke memori HP user
+    if (tanggalServer) {
+      localStorage.setItem('tanggalAppTerakhir_sbu768', tanggalServer);
+    }
+  } catch (e) {
+    // Diamkan jika offline/error
+  }
+}
+
+// Jalankan pengecekan pertama kali saat aplikasi dibuka
+cekUpdateOtomatisSBU();
+
+// Ulangi pengecekan setiap 5 menit (300.000 ms)
+setInterval(cekUpdateOtomatisSBU, 5 * 60 * 1000);
+
+
+// --- Fungsi Tampilan Notifikasi (Warna Ungu/Indigo agar beda) ---
+function tampilkanNotifUpdateSBU() {
+  if (document.getElementById('notifUpdateSBU')) return; // Mencegah dobel
+  
+  const html = `
+  <div id="notifUpdateSBU" class="fixed top-4 left-4 right-4 max-w-md mx-auto bg-indigo-600 text-white p-4 rounded-xl shadow-2xl z-[9999] flex items-center justify-between" style="animation: slideDown 0.4s ease-out;">
+    <div class="flex items-center gap-3">
+      <i class="fa-solid fa-rotate text-2xl animate-spin"></i>
+      <div>
+        <p class="font-bold text-sm">Update Aplikasi SBU768 Tersedia!</p>
+        <p class="text-xs opacity-90">Klik tombol di kanan untuk memperbarui</p>
+      </div>
+    </div>
+    <button onclick="paksaUpdateSBU()" class="bg-white text-indigo-600 px-4 py-2 rounded-lg font-bold text-xs hover:bg-gray-100 transition shadow-md whitespace-nowrap">
+      Update
+    </button>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  
+  // Hilang otomatis setelah 15 detik
+  setTimeout(() => {
+    const n = document.getElementById('notifUpdateSBU');
+    if (n) { n.style.opacity = '0'; setTimeout(() => n.remove(), 500); }
+  }, 15000);
+}
+
+function paksaUpdateSBU() {
+  const n = document.getElementById('notifUpdateSBU');
+  if (n) n.remove();
+  
+  // Hapus cache dan reload paksa dari server
+  if ('caches' in window) {
+    caches.keys().then(names => {
+      names.forEach(name => caches.delete(name));
     });
-  });
+  }
+  window.location.reload(true);
 }
 
 // ===== INIT =====
