@@ -984,7 +984,7 @@ function resetBtn(id, text) {
   btn.classList.remove('bg-green-100', 'border-green-400', 'text-green-700');
 }
 
-// ===== WATERMARK TIMESTAMP UNTUK FOTO =====
+// ===== WATERMARK TIMESTAMP PROFESIONAL =====
 async function addTimestampWatermark(imageDataUrl, label) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -994,52 +994,102 @@ async function addTimestampWatermark(imageDataUrl, label) {
         const ctx = canvas.getContext('2d');
         canvas.width = img.width;
         canvas.height = img.height;
+        
+        // Draw original image
         ctx.drawImage(img, 0, 0);
         
         const now = new Date();
-        const tanggal = now.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
-        const waktu = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const hariPasaran = hitungHariPasaranUser();
+        const hariMasehi = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
         
-        const watermarkText = `${label}\n${hariPasaran}, ${tanggal}\n${waktu}`;
-        const fontSize = Math.max(24, Math.floor(img.width * 0.035));
+        const hariNama = hariMasehi[now.getDay()];
+        const bulanNama = bulan[now.getMonth()];
+        const tanggal = now.getDate();
+        const tahun = now.getFullYear();
+        const jam = String(now.getHours()).padStart(2,'0');
+        const menit = String(now.getMinutes()).padStart(2,'0');
+        const detik = String(now.getSeconds()).padStart(2,'0');
+        const pasaran = hitungHariPasaranUser();
+        
+        // ===== CALCULATE RESPONSIVE SIZES =====
+        const baseWidth = Math.min(canvas.width, 800);
+        const fontSize = Math.max(16, Math.floor(baseWidth * 0.035));
+        const smallFontSize = Math.max(12, Math.floor(baseWidth * 0.025));
+        const lineHeight = fontSize * 1.3;
+        const padding = Math.floor(baseWidth * 0.03);
+        const watermarkHeight = (lineHeight * 4) + (padding * 2);
+        
+        // ===== DRAW WATERMARK BACKGROUND =====
+        // Gradient background
+        const gradient = ctx.createLinearGradient(0, canvas.height - watermarkHeight, 0, canvas.height);
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.90)');
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.95)');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, canvas.height - watermarkHeight, canvas.width, watermarkHeight);
+        
+        // Yellow accent line at top
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(0, canvas.height - watermarkHeight, canvas.width, 3);
+        
+        // ===== DRAW TEXT CONTENT =====
+        let yPos = canvas.height - watermarkHeight + padding;
+        
+        // 1. LABEL (PATROLI/KEJADIAN)
+        ctx.fillStyle = '#fbbf24';
         ctx.font = `bold ${fontSize}px Arial, sans-serif`;
         ctx.textAlign = 'left';
-        ctx.textBaseline = 'bottom';
+        ctx.textBaseline = 'top';
         
-        const padding = Math.floor(img.width * 0.02);
-        const lines = watermarkText.split('\n');
-        const lineHeight = fontSize * 1.3;
-        const totalHeight = lines.length * lineHeight;
-        const startY = img.height - padding;
+        const iconLabel = label.includes('PATROLI') ? '📍' : '⚠️';
+        ctx.fillText(`${iconLabel} ${label}`, padding, yPos);
         
-        // Background semi-transparan
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-        ctx.fillRect(0, startY - totalHeight - padding, img.width, totalHeight + padding * 2);
+        yPos += lineHeight;
         
-        // Garis aksen kuning di atas
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillRect(0, startY - totalHeight - padding, img.width, 4);
-        
-        // Text putih dengan shadow
+        // 2. TANGGAL LENGKAP
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
+        ctx.font = `bold ${smallFontSize}px Arial, sans-serif`;
+        const tanggalLengkap = `${hariNama}, ${tanggal} ${bulanNama} ${tahun}`;
+        ctx.fillText(tanggalLengkap, padding, yPos);
         
-        lines.forEach((line, index) => {
-          const textY = startY - (lines.length - 1 - index) * lineHeight;
-          ctx.fillText(line, padding, textY);
-        });
+        yPos += lineHeight;
         
+        // 3. WAKTU & PASARAN
+        ctx.fillStyle = '#e5e7eb';
+        ctx.font = `${smallFontSize}px Arial, sans-serif`;
+        const waktuPasaran = `${pasaran} • ${jam}:${menit}:${detik}`;
+        ctx.fillText(waktuPasaran, padding, yPos);
+        
+        yPos += lineHeight;
+        
+        // 4. GPS INFO (if available)
+        if (gps) {
+          ctx.fillStyle = '#9ca3af';
+          ctx.font = `${Math.max(10, Math.floor(baseWidth * 0.02))}px 'Courier New', monospace`;
+          const gpsInfo = `📍 ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)} (±${Math.round(gps.accuracy)}m)`;
+          ctx.fillText(gpsInfo, padding, yPos);
+        }
+        
+        // 5. SMALL TIMESTAMP AT BOTTOM RIGHT
+        const timestampSmall = `${tanggal.toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${tahun} ${jam}:${menit}`;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = `${Math.max(10, Math.floor(baseWidth * 0.022))}px Arial, sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.fillText(timestampSmall, canvas.width - padding, canvas.height - padding);
+        
+        // Convert to JPEG with high quality
         resolve(canvas.toDataURL('image/jpeg', 0.92));
+        
       } catch (e) {
         console.error('Watermark error:', e);
-        resolve(imageDataUrl); // Fallback: kembalikan foto asli
+        resolve(imageDataUrl); // Fallback to original
       }
     };
-    img.onerror = function() { resolve(imageDataUrl); };
+    
+    img.onerror = function() {
+      resolve(imageDataUrl);
+    };
+    
     img.src = imageDataUrl;
   });
 }
