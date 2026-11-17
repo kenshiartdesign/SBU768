@@ -1921,14 +1921,33 @@ async function loadRekapAbsensi() {
       const t = new Date(i.tanggal_mulai);
       return t.getFullYear() === tahun && (t.getMonth() + 1) === bln;
     }) : [];
+        // ===== PERBAIKAN: SMART PAIRING (PULANG ikut tanggal MASUK) =====
+    const sortedAbsen = [...absenList].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     const grouped = {};
-    absenList.forEach(a => {
+    let openMasukDate = null; // Menyimpan tanggal shift (MASUK) yang belum punya PULANG
+
+    sortedAbsen.forEach(a => {
       const tgl = new Date(a.timestamp);
-      const key = tgl.getFullYear() + '-' + String(tgl.getMonth() + 1).padStart(2, '0') + '-' + String(tgl.getDate()).padStart(2, '0');
-      if (!grouped[key]) grouped[key] = { masuk: null, pulang: null, lokasi: a.lokasi, timestamp: a.timestamp };
-      if (a.jenis === 'MASUK' && !grouped[key].masuk) grouped[key].masuk = { jam: tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), foto: a.foto };
-      if (a.jenis === 'PULANG' && !grouped[key].pulang) grouped[key].pulang = { jam: tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), foto: a.foto };
+      const dateStr = tgl.getFullYear() + '-' + String(tgl.getMonth() + 1).padStart(2, '0') + '-' + String(tgl.getDate()).padStart(2, '0');
+      const jamStr = tgl.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+      if (a.jenis === 'MASUK') {
+        if (!openMasukDate) openMasukDate = dateStr; // Buka shift baru
+        if (!grouped[dateStr]) grouped[dateStr] = { masuk: null, pulang: null, lokasi: a.lokasi, timestamp: a.timestamp };
+        if (!grouped[dateStr].masuk) grouped[dateStr].masuk = { jam: jamStr, foto: a.foto };
+      } 
+      else if (a.jenis === 'PULANG') {
+        // Jika ada shift MASUK yang terbuka, gunakan tanggal MASUK tersebut. 
+        // Jika tidak (data anomali), gunakan tanggal asli PULANG.
+        const targetDate = openMasukDate || dateStr;
+        
+        if (!grouped[targetDate]) grouped[targetDate] = { masuk: null, pulang: null, lokasi: a.lokasi, timestamp: a.timestamp };
+        if (!grouped[targetDate].pulang) grouped[targetDate].pulang = { jam: jamStr, foto: a.foto };
+        
+        openMasukDate = null; // Shift selesai
+      }
     });
+    // ===== AKHIR PERBAIKAN =====
     rekapDataGlobal = { grouped, ijinList, tahun, bln, bulanSudahLewat };
     const hariKerja = getHariKerjaBulan(tahun, bln);
     const hariDenganAbsen = Object.keys(grouped).length;
